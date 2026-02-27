@@ -30,6 +30,19 @@ Gateway.PrepareMessage.handler(async ({ event, context }) => {
   const messageHash = getMessageHash(messageHex);
   const msgId = getMessageId(fromCentrifugeId, toCentrifugeId, messageHash);
 
+  // Check if message was already created by receiver (cross-chain ordering)
+  const existingMessages = await context.CrosschainMessage.getWhere({ messageId: { _eq: msgId } });
+  const executedMsg = existingMessages.find((m: any) => m.status === "Executed");
+  if (executedMsg) {
+    // Enrich receiver-created message with sender-side data (poolId)
+    context.CrosschainMessage.set({
+      ...executedMsg,
+      poolId: poolId > 0n ? poolId : executedMsg.poolId,
+      pool_id: poolId > 0n ? poolId.toString() : executedMsg.pool_id,
+    });
+    return;
+  }
+
   const index = await getNextIndex((id) => context.CrosschainMessage.get(id), msgId);
   const entityId = crosschainMessageId(msgId, index);
 
@@ -212,7 +225,37 @@ Gateway.ExecuteMessage.handler(async ({ event, context }) => {
     (m: any) => m.status === "AwaitingBatchDelivery" || m.status === "Failed"
   );
   if (!crosschainMsg) {
-    context.log.warn(`CrosschainMessage ${msgId} not found in AwaitingBatchDelivery/Failed state`);
+    // Receiver processed before sender — create message with Executed status
+    const versionIndex = getVersionIndex(event.chainId, event.srcAddress);
+    const messageBuffer = Buffer.from(message.substring(2), "hex");
+    const messageType = getCrosschainMessageType(messageBuffer.readUInt8(0), versionIndex);
+    const index = await getNextIndex((id) => context.CrosschainMessage.get(id), msgId);
+    const entityId = crosschainMessageId(msgId, index);
+
+    context.CrosschainMessage.set({
+      id: entityId,
+      messageId: msgId,
+      index,
+      poolId: undefined,
+      payloadId: undefined,
+      payloadIndex: undefined,
+      messageType,
+      status: "Executed",
+      hash: messageHash,
+      rawData: messageHex,
+      data: undefined,
+      failReason: undefined,
+      fromCentrifugeId,
+      toCentrifugeId,
+      executedAt: event.block.timestamp,
+      executedAtBlock: event.block.number,
+      executedAtTxHash: event.transaction.hash,
+      crosschainPayload_id: undefined,
+      pool_id: undefined,
+      fromBlockchain_id: blockchainId(fromCentrifugeId),
+      toBlockchain_id: blockchainId(toCentrifugeId),
+      ...createdDefaults(event),
+    });
     return;
   }
 
@@ -269,7 +312,37 @@ Gateway.FailMessage.handler(async ({ event, context }) => {
     (m: any) => m.status === "AwaitingBatchDelivery" || m.status === "Failed"
   );
   if (!crosschainMsg) {
-    context.log.warn(`CrosschainMessage ${msgId} not found in AwaitingBatchDelivery/Failed state`);
+    // Receiver processed before sender — create message with Failed status
+    const versionIndex = getVersionIndex(event.chainId, event.srcAddress);
+    const messageBuffer = Buffer.from(message.substring(2), "hex");
+    const messageType = getCrosschainMessageType(messageBuffer.readUInt8(0), versionIndex);
+    const index = await getNextIndex((id) => context.CrosschainMessage.get(id), msgId);
+    const entityId = crosschainMessageId(msgId, index);
+
+    context.CrosschainMessage.set({
+      id: entityId,
+      messageId: msgId,
+      index,
+      poolId: undefined,
+      payloadId: undefined,
+      payloadIndex: undefined,
+      messageType,
+      status: "Failed",
+      hash: messageHash,
+      rawData: messageHex,
+      data: undefined,
+      failReason: error,
+      fromCentrifugeId,
+      toCentrifugeId,
+      executedAt: undefined,
+      executedAtBlock: undefined,
+      executedAtTxHash: undefined,
+      crosschainPayload_id: undefined,
+      pool_id: undefined,
+      fromBlockchain_id: blockchainId(fromCentrifugeId),
+      toBlockchain_id: blockchainId(toCentrifugeId),
+      ...createdDefaults(event),
+    });
     return;
   }
 

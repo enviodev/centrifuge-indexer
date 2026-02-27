@@ -30,17 +30,17 @@ MultiAdapter.SendPayload.handler(async ({ event, context }) => {
   const payloadHex = payloadData as `0x${string}`;
   const versionIndex = getVersionIndex(event.chainId, event.srcAddress);
 
-  // Try to find existing payload (Underpaid or InTransit)
+  // Try to find existing payload (any non-Completed status, or Completed from receiver-first)
   const existingPayloads = await context.CrosschainPayload.getWhere({ payloadId: { _eq: payloadIdHex } });
   let payload = existingPayloads.find(
-    (p: any) => p.status === "Underpaid" || p.status === "InTransit"
+    (p: any) => p.status === "Underpaid" || p.status === "InTransit" || p.status === "Delivered" || p.status === "Completed"
   );
 
   let payloadIndex: number;
   let payloadEntityId: string;
 
   if (!payload) {
-    // Create new payload
+    // Create new payload (sender processed first, no prior payload)
     payloadIndex = existingPayloads.length;
     payloadEntityId = crosschainPayloadId(payloadIdHex, payloadIndex);
 
@@ -91,7 +91,41 @@ MultiAdapter.SendPayload.handler(async ({ event, context }) => {
     });
 
     payload = await context.CrosschainPayload.get(payloadEntityId);
-    payloadIndex = payloadIndex;
+  } else if (payload.status === "Delivered" || payload.status === "Completed") {
+    // Receiver created payload first — enrich with sender-side data and link messages
+    payloadIndex = payload.index;
+    payloadEntityId = payload.id;
+
+    const messages = extractMessagesFromPayload(payloadHex, versionIndex);
+    let payloadPoolId: bigint | undefined = payload.poolId ?? undefined;
+
+    for (const msg of messages) {
+      const msgHash = getMessageHash(msg);
+      const msgId = getMessageId(fromCentrifugeId, toCentrifugeId, msgHash);
+
+      const existingMessages = await context.CrosschainMessage.getWhere({ messageId: { _eq: msgId } });
+      const unlinkedMsg = existingMessages.find((m: any) => !m.payloadId);
+      if (unlinkedMsg) {
+        context.CrosschainMessage.set({
+          ...unlinkedMsg,
+          payloadId: payloadIdHex,
+          payloadIndex,
+          crosschainPayload_id: payloadEntityId,
+        });
+        if (unlinkedMsg.poolId) payloadPoolId = unlinkedMsg.poolId;
+      }
+    }
+
+    // Update payload with sender-side data (rawData, preparedAt, poolId)
+    context.CrosschainPayload.set({
+      ...payload,
+      rawData: payloadHex,
+      poolId: payloadPoolId,
+      preparedAt: event.block.timestamp,
+      preparedAtBlock: event.block.number,
+      preparedAtTxHash: event.transaction.hash,
+      pool_id: payloadPoolId ? payloadPoolId.toString() : payload.pool_id,
+    });
   } else {
     payloadIndex = payload.index;
     payloadEntityId = payload.id;
@@ -128,11 +162,11 @@ MultiAdapter.SendProof.handler(async ({ event, context }) => {
   const toCentrifugeId = toCentrifugeIdNum.toString();
   const fromCentrifugeId = getCentrifugeId(event.chainId);
 
-  // Find incomplete payload (not Completed)
+  // Find payload (prefer non-Completed, fall back to Completed for receiver-first ordering)
   const existingPayloads = await context.CrosschainPayload.getWhere({ payloadId: { _eq: payloadIdHex } });
-  const payload = existingPayloads.find((p: any) => p.status !== "Completed");
+  const payload = existingPayloads.find((p: any) => p.status !== "Completed") ?? existingPayloads[0];
   if (!payload) {
-    context.log.warn(`No incomplete payload found for ${payloadIdHex}`);
+    context.log.warn(`No payload found for SendProof ${payloadIdHex}`);
     return;
   }
   const payloadIndex = payload.index;
@@ -165,20 +199,80 @@ MultiAdapter.SendProof.handler(async ({ event, context }) => {
 
 MultiAdapter.HandlePayload.handler(async ({ event, context }) => {
   // RECEIVING CHAIN
-  const { payloadId: payloadIdHex, adapter, centrifugeId: fromCentrifugeIdNum } = event.params;
+  const { payloadId: payloadIdHex, payload: payloadBytes, adapter, centrifugeId: fromCentrifugeIdNum } = event.params;
   const fromCentrifugeId = fromCentrifugeIdNum.toString();
   const toCentrifugeId = getCentrifugeId(event.chainId);
 
   // Find InTransit or Delivered payload
   const existingPayloads = await context.CrosschainPayload.getWhere({ payloadId: { _eq: payloadIdHex } });
-  const payload = existingPayloads.find(
+  let payload = existingPayloads.find(
     (p: any) => p.status === "InTransit" || p.status === "Delivered"
   );
+
+  let payloadIndex: number;
+  let payloadEntityId: string;
+
   if (!payload) {
-    context.log.warn(`No InTransit/Delivered payload found for ${payloadIdHex}`);
-    return;
+    // Receiver processed before sender — create payload with Delivered status
+    payloadIndex = existingPayloads.length;
+    payloadEntityId = crosschainPayloadId(payloadIdHex, payloadIndex);
+    const payloadHex = payloadBytes as `0x${string}`;
+
+    context.CrosschainPayload.set({
+      id: payloadEntityId,
+      payloadId: payloadIdHex,
+      index: payloadIndex,
+      fromCentrifugeId,
+      toCentrifugeId,
+      rawData: payloadHex,
+      poolId: undefined,
+      status: "Delivered",
+      deliveredAt: event.block.timestamp,
+      deliveredAtBlock: event.block.number,
+      deliveredAtTxHash: event.transaction.hash,
+      completedAt: undefined,
+      completedAtBlock: undefined,
+      completedAtTxHash: undefined,
+      preparedAt: event.block.timestamp,
+      preparedAtBlock: event.block.number,
+      preparedAtTxHash: event.transaction.hash,
+      fromBlockchain_id: blockchainId(fromCentrifugeId),
+      toBlockchain_id: blockchainId(toCentrifugeId),
+      pool_id: undefined,
+      ...createdDefaults(event),
+    });
+  } else {
+    payloadIndex = payload.index;
+    payloadEntityId = payload.id;
+
+    // Mark as Delivered if InTransit
+    if (payload.status === "InTransit") {
+      context.CrosschainPayload.set({
+        ...payload,
+        status: "Delivered",
+        deliveredAt: event.block.timestamp,
+        deliveredAtBlock: event.block.number,
+        deliveredAtTxHash: event.transaction.hash,
+      });
+
+      // Check if all messages are already executed → mark as completed
+      const payloadMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: payloadIdHex } });
+      const relevantMessages = payloadMessages.filter((m: any) => m.payloadIndex === payloadIndex);
+      const allExecuted = relevantMessages.length > 0 && relevantMessages.every((m: any) => m.status === "Executed");
+      if (allExecuted) {
+        const updatedPayload = await context.CrosschainPayload.get(payloadEntityId);
+        if (updatedPayload) {
+          context.CrosschainPayload.set({
+            ...updatedPayload,
+            status: "Completed",
+            completedAt: event.block.timestamp,
+            completedAtBlock: event.block.number,
+            completedAtTxHash: event.transaction.hash,
+          });
+        }
+      }
+    }
   }
-  const payloadIndex = payload.index;
 
   // Create AdapterParticipation
   const adapterAddress = adapter.toLowerCase();
@@ -196,42 +290,12 @@ MultiAdapter.HandlePayload.handler(async ({ event, context }) => {
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
     transactionHash: event.transaction.hash,
-    payload_id: payload.id,
+    payload_id: payloadEntityId,
     adapter_id: adapterIdFn(adapterAddress, toCentrifugeId),
     centrifugeBlockchain_id: blockchainId(toCentrifugeId),
     fromBlockchain_id: blockchainId(fromCentrifugeId),
     toBlockchain_id: blockchainId(toCentrifugeId),
   });
-
-  // Check if payload is verified (both HANDLE/PAYLOAD and HANDLE/PROOF received)
-  // For now, mark as delivered when HandlePayload is received
-  if (payload.status === "InTransit") {
-    context.CrosschainPayload.set({
-      ...payload,
-      status: "Delivered",
-      deliveredAt: event.block.timestamp,
-      deliveredAtBlock: event.block.number,
-      deliveredAtTxHash: event.transaction.hash,
-    });
-
-    // Check if all messages are already executed → mark as completed
-    const payloadMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: payloadIdHex } });
-    const relevantMessages = payloadMessages.filter((m: any) => m.payloadIndex === payloadIndex);
-    const allExecuted = relevantMessages.length > 0 && relevantMessages.every((m: any) => m.status === "Executed");
-    if (allExecuted) {
-      // Re-read payload since we just modified it
-      const updatedPayload = await context.CrosschainPayload.get(payload.id);
-      if (updatedPayload) {
-        context.CrosschainPayload.set({
-          ...updatedPayload,
-          status: "Completed",
-          completedAt: event.block.timestamp,
-          completedAtBlock: event.block.number,
-          completedAtTxHash: event.transaction.hash,
-        });
-      }
-    }
-  }
 });
 
 // --- HandleProof ---
@@ -242,14 +306,73 @@ MultiAdapter.HandleProof.handler(async ({ event, context }) => {
   const fromCentrifugeId = fromCentrifugeIdNum.toString();
   const toCentrifugeId = getCentrifugeId(event.chainId);
 
-  // Find incomplete payload
+  // Find incomplete payload (prefer non-Completed, fall back to any)
   const existingPayloads = await context.CrosschainPayload.getWhere({ payloadId: { _eq: payloadIdHex } });
-  const payload = existingPayloads.find((p: any) => p.status !== "Completed");
+  let payload = existingPayloads.find((p: any) => p.status !== "Completed") ?? existingPayloads[0];
+
+  let payloadIndex: number;
+  let payloadEntityId: string;
+
   if (!payload) {
-    context.log.warn(`No incomplete payload found for ${payloadIdHex}`);
-    return;
+    // Receiver processed before sender — create payload with Delivered status
+    payloadIndex = existingPayloads.length;
+    payloadEntityId = crosschainPayloadId(payloadIdHex, payloadIndex);
+
+    context.CrosschainPayload.set({
+      id: payloadEntityId,
+      payloadId: payloadIdHex,
+      index: payloadIndex,
+      fromCentrifugeId,
+      toCentrifugeId,
+      rawData: "0x", // No payload bytes in HandleProof — will be enriched by SendPayload
+      poolId: undefined,
+      status: "Delivered",
+      deliveredAt: event.block.timestamp,
+      deliveredAtBlock: event.block.number,
+      deliveredAtTxHash: event.transaction.hash,
+      completedAt: undefined,
+      completedAtBlock: undefined,
+      completedAtTxHash: undefined,
+      preparedAt: event.block.timestamp,
+      preparedAtBlock: event.block.number,
+      preparedAtTxHash: event.transaction.hash,
+      fromBlockchain_id: blockchainId(fromCentrifugeId),
+      toBlockchain_id: blockchainId(toCentrifugeId),
+      pool_id: undefined,
+      ...createdDefaults(event),
+    });
+  } else {
+    payloadIndex = payload.index;
+    payloadEntityId = payload.id;
+
+    // Mark as Delivered if InTransit
+    if (payload.status === "InTransit") {
+      context.CrosschainPayload.set({
+        ...payload,
+        status: "Delivered",
+        deliveredAt: event.block.timestamp,
+        deliveredAtBlock: event.block.number,
+        deliveredAtTxHash: event.transaction.hash,
+      });
+
+      // Check if all messages are already executed → mark as completed
+      const payloadMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: payloadIdHex } });
+      const relevantMessages = payloadMessages.filter((m: any) => m.payloadIndex === payloadIndex);
+      const allExecuted = relevantMessages.length > 0 && relevantMessages.every((m: any) => m.status === "Executed");
+      if (allExecuted) {
+        const updatedPayload = await context.CrosschainPayload.get(payloadEntityId);
+        if (updatedPayload) {
+          context.CrosschainPayload.set({
+            ...updatedPayload,
+            status: "Completed",
+            completedAt: event.block.timestamp,
+            completedAtBlock: event.block.number,
+            completedAtTxHash: event.transaction.hash,
+          });
+        }
+      }
+    }
   }
-  const payloadIndex = payload.index;
 
   // Create AdapterParticipation
   const adapterAddress = adapter.toLowerCase();
@@ -267,40 +390,12 @@ MultiAdapter.HandleProof.handler(async ({ event, context }) => {
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
     transactionHash: event.transaction.hash,
-    payload_id: payload.id,
+    payload_id: payloadEntityId,
     adapter_id: adapterIdFn(adapterAddress, toCentrifugeId),
     centrifugeBlockchain_id: blockchainId(toCentrifugeId),
     fromBlockchain_id: blockchainId(fromCentrifugeId),
     toBlockchain_id: blockchainId(toCentrifugeId),
   });
-
-  // Check if payload is verified — mark as delivered when HandleProof is received
-  if (payload.status === "InTransit") {
-    context.CrosschainPayload.set({
-      ...payload,
-      status: "Delivered",
-      deliveredAt: event.block.timestamp,
-      deliveredAtBlock: event.block.number,
-      deliveredAtTxHash: event.transaction.hash,
-    });
-
-    // Check if all messages are already executed → mark as completed
-    const payloadMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: payloadIdHex } });
-    const relevantMessages = payloadMessages.filter((m: any) => m.payloadIndex === payloadIndex);
-    const allExecuted = relevantMessages.length > 0 && relevantMessages.every((m: any) => m.status === "Executed");
-    if (allExecuted) {
-      const updatedPayload = await context.CrosschainPayload.get(payload.id);
-      if (updatedPayload) {
-        context.CrosschainPayload.set({
-          ...updatedPayload,
-          status: "Completed",
-          completedAt: event.block.timestamp,
-          completedAtBlock: event.block.number,
-          completedAtTxHash: event.transaction.hash,
-        });
-      }
-    }
-  }
 });
 
 // --- FileAdapters ---
