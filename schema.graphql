@@ -110,7 +110,7 @@ type Deployment {
 
 type Pool {
   id: ID! # poolId (bigint as string)
-  centrifugeId: String!
+  centrifugeId: String! @index
   isActive: Boolean!
   currency: BigInt
   decimals: Int
@@ -148,7 +148,7 @@ type Token {
   id: ID! # hex tokenId
   index: Int
   isActive: Boolean!
-  centrifugeId: String
+  centrifugeId: String @index
   poolId: BigInt!
   decimals: Int
   name: String
@@ -242,7 +242,7 @@ type VaultRedeemOrder {
 
 type TokenInstance {
   id: ID! # centrifugeId-tokenId
-  centrifugeId: String!
+  centrifugeId: String! @index
   tokenId: String!
   isActive: Boolean!
   address: String! @index
@@ -622,7 +622,7 @@ type Escrow {
 
 type HoldingEscrow {
   id: ID! # tokenId-assetId
-  centrifugeId: String!
+  centrifugeId: String! @index
   poolId: BigInt!
   tokenId: String!
   assetId: BigInt!

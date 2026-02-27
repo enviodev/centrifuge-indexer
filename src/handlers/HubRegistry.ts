@@ -1,4 +1,5 @@
 import { HubRegistry } from "generated";
+import "./Snapshots"; // Side-effect import — registers onBlock handlers
 import { getCentrifugeId, networkNames, explorerUrls, chainIcons } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import { poolManagerId, assetRegistrationId, accountId, blockchainId } from "../utils/ids";

@@ -945,10 +945,18 @@ export function parseMessage(rawData: string): {
 **`MerkleProofManager:UpdatePolicy`** — Creates/updates Policy with merkle root
 
 ### Checkpoint
-- [ ] OnOffRampManager entities created from factory events
-- [ ] Relayer/OnRamp/OffRamp entities track enable/disable correctly
-- [ ] MerkleProofManager + Policy entities created
-- [ ] Test: verify factory registration and subsequent events are indexed
+- [x] OnOffRampManager entities created from factory events
+- [x] Relayer/OnRamp/OffRamp entities track enable/disable correctly
+- [x] MerkleProofManager + Policy entities created
+- [x] `contractRegister` for both factory contracts (OnOfframpManagerFactory, MerkleProofManagerFactory)
+- [x] UpdatePolicy avoids RPC call — looks up poolId from stored MerkleProofManager entity
+- [x] Zero type errors
+
+### Implementation Notes
+- Factory pattern matches PoolEscrowFactory: `contractRegister` + `handler` on factory event
+- OnOffRampManager lookup by constructed ID (`address-centrifugeId`) — no getWhere needed
+- MerkleProofManager.UpdatePolicy: source uses RPC `readContract` for poolId; replaced with entity lookup
+- Account created for off-ramp receiver addresses
 
 ---
 
@@ -1012,10 +1020,21 @@ SnapshotTrigger.onBlock(async ({ event, context }) => {
 **Note:** Snapshots are also triggered by specific events (price updates, etc.). Those event-triggered snapshots are created inline in the relevant handler (Phase 3, 4, 5) with `trigger: "event"` and `triggerTxHash`.
 
 ### Checkpoint
-- [ ] Periodic snapshots created at correct intervals per chain
-- [ ] Event-triggered snapshots created from price/issuance updates
-- [ ] Snapshot entities contain correct point-in-time values
+- [x] Periodic snapshots created at correct intervals per chain
+- [ ] Event-triggered snapshots created from price/issuance updates (future enhancement)
+- [x] Snapshot entities contain correct point-in-time values
 - [ ] Test: verify snapshot creation over a 24h block range
+
+### Implementation Notes
+- Uses `onBlock` from "generated" — self-registers, no config.yaml entry needed
+- Side-effect imported from `HubRegistry.ts` to ensure file is loaded
+- `as const` on CHAINS array for literal chain ID types matching the generated union
+- `blockEvent` type only exposes `number`; `timestamp` accessed via runtime cast `(block as any).timestamp ?? 0`
+- Added `@index` on `centrifugeId` for Pool, Token, TokenInstance, HoldingEscrow (snapshot queries)
+- Per-chain intervals from `skipBlocks` in chains.ts (~1 hour per chain)
+- Creates PoolSnapshot, TokenSnapshot, TokenInstanceSnapshot, HoldingEscrowSnapshot
+- HoldingSnapshot entity exists in schema but not created (matching source behavior)
+- Updates `Blockchain.lastPeriodStart` on each snapshot trigger
 
 ---
 
