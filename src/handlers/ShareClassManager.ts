@@ -1,16 +1,186 @@
 import { ShareClassManager } from "generated";
+import { getCentrifugeId } from "../utils/chains";
+import { createdDefaults, updatedDefaults } from "../utils/defaults";
+import { tokenId as tokenIdFn, blockchainId } from "../utils/ids";
+import {
+  handleUpdateDepositRequest,
+  handleUpdateRedeemRequest,
+  handleApproveDeposits,
+  handleApproveRedeems,
+  handleIssueShares,
+  handleRevokeShares,
+  handleClaimDeposit,
+  handleClaimRedeem,
+} from "./shared/orderLifecycle";
 
-ShareClassManager.AddShareClassLong.handler(async ({ event, context }) => {});
-ShareClassManager.AddShareClassShort.handler(async ({ event, context }) => {});
-ShareClassManager.UpdateMetadata.handler(async ({ event, context }) => {});
-ShareClassManager.UpdateShareClass.handler(async ({ event, context }) => {});
-ShareClassManager.UpdateDepositRequest.handler(async ({ event, context }) => {});
-ShareClassManager.UpdateRedeemRequest.handler(async ({ event, context }) => {});
-ShareClassManager.ApproveDeposits.handler(async ({ event, context }) => {});
-ShareClassManager.ApproveRedeems.handler(async ({ event, context }) => {});
-ShareClassManager.IssueShares.handler(async ({ event, context }) => {});
-ShareClassManager.RevokeShares.handler(async ({ event, context }) => {});
-ShareClassManager.ClaimDeposit.handler(async ({ event, context }) => {});
-ShareClassManager.ClaimRedeem.handler(async ({ event, context }) => {});
+// --- AddShareClass (Long — with name/symbol/salt) ---
+
+ShareClassManager.AddShareClassLong.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, index, name, symbol, salt } = event.params;
+  const centrifugeId = getCentrifugeId(event.chainId);
+
+  // Look up pool decimals
+  const pool = await context.Pool.get(poolId.toString());
+  const decimals = pool?.decimals;
+
+  const tId = tokenIdFn(poolId, tokenId);
+  const existing = await context.Token.get(tId);
+
+  context.Token.set({
+    id: tId,
+    index: Number(index),
+    isActive: true,
+    centrifugeId,
+    poolId,
+    decimals,
+    name,
+    symbol,
+    salt,
+    totalIssuance: existing?.totalIssuance ?? undefined,
+    tokenPrice: existing?.tokenPrice ?? undefined,
+    tokenPriceComputedAt: existing?.tokenPriceComputedAt ?? undefined,
+    blockchain_id: blockchainId(centrifugeId),
+    pool_id: poolId.toString(),
+    ...(existing ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
+  });
+});
+
+// --- AddShareClass (Short — no name/symbol/salt) ---
+
+ShareClassManager.AddShareClassShort.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, index } = event.params;
+  const centrifugeId = getCentrifugeId(event.chainId);
+
+  const pool = await context.Pool.get(poolId.toString());
+  const decimals = pool?.decimals;
+
+  const tId = tokenIdFn(poolId, tokenId);
+  const existing = await context.Token.get(tId);
+
+  context.Token.set({
+    id: tId,
+    index: Number(index),
+    isActive: true,
+    centrifugeId,
+    poolId,
+    decimals,
+    name: existing?.name ?? undefined,
+    symbol: existing?.symbol ?? undefined,
+    salt: existing?.salt ?? undefined,
+    totalIssuance: existing?.totalIssuance ?? undefined,
+    tokenPrice: existing?.tokenPrice ?? undefined,
+    tokenPriceComputedAt: existing?.tokenPriceComputedAt ?? undefined,
+    blockchain_id: blockchainId(centrifugeId),
+    pool_id: poolId.toString(),
+    ...(existing ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
+  });
+});
+
+// --- UpdateMetadata ---
+
+ShareClassManager.UpdateMetadata.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, name, symbol } = event.params;
+
+  const tId = tokenIdFn(poolId, tokenId);
+  const existing = await context.Token.get(tId);
+  if (!existing) {
+    context.log.warn(`Token ${tId} not found for UpdateMetadata`);
+    return;
+  }
+
+  context.Token.set({
+    ...existing,
+    name,
+    symbol,
+    ...updatedDefaults(event),
+  });
+});
+
+// --- UpdateShareClass ---
+
+ShareClassManager.UpdateShareClass.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, navPoolPerShare: tokenPrice } = event.params;
+
+  const tId = tokenIdFn(poolId, tokenId);
+  const existing = await context.Token.get(tId);
+  if (!existing) {
+    context.log.warn(`Token ${tId} not found for UpdateShareClass`);
+    return;
+  }
+
+  context.Token.set({
+    ...existing,
+    tokenPrice,
+    ...updatedDefaults(event),
+  });
+});
+
+// --- Order Lifecycle Handlers ---
+
+ShareClassManager.UpdateDepositRequest.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, depositAssetId, epoch, investor, pendingUserAssetAmount, pendingTotalAssetAmount, queuedUserAssetAmount } = event.params;
+  await handleUpdateDepositRequest(
+    { poolId, tokenId, depositAssetId, epoch: Number(epoch), investor, pendingUserAssetAmount, pendingTotalAssetAmount, queuedUserAssetAmount },
+    event, context
+  );
+});
+
+ShareClassManager.UpdateRedeemRequest.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, payoutAssetId, epoch, investor, pendingUserShareAmount, pendingTotalShareAmount, queuedUserShareAmount } = event.params;
+  await handleUpdateRedeemRequest(
+    { poolId, tokenId, payoutAssetId, epoch: Number(epoch), investor, pendingUserShareAmount, pendingTotalShareAmount, queuedUserShareAmount },
+    event, context
+  );
+});
+
+ShareClassManager.ApproveDeposits.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, depositAssetId, epoch, approvedPoolAmount, approvedAssetAmount, pendingAssetAmount } = event.params;
+  await handleApproveDeposits(
+    { poolId, tokenId, depositAssetId, epoch: Number(epoch), approvedPoolAmount, approvedAssetAmount, pendingAssetAmount },
+    event, context
+  );
+});
+
+ShareClassManager.ApproveRedeems.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, payoutAssetId, epoch, approvedShareAmount, pendingShareAmount } = event.params;
+  await handleApproveRedeems(
+    { poolId, tokenId, payoutAssetId, epoch: Number(epoch), approvedShareAmount, pendingShareAmount },
+    event, context
+  );
+});
+
+ShareClassManager.IssueShares.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, depositAssetId, epoch, navPoolPerShare, navAssetPerShare, issuedShareAmount } = event.params;
+  await handleIssueShares(
+    { poolId, tokenId, depositAssetId, epoch: Number(epoch), navPoolPerShare, navAssetPerShare, issuedShareAmount },
+    event, context
+  );
+});
+
+ShareClassManager.RevokeShares.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, payoutAssetId, epoch, navPoolPerShare, navAssetPerShare, revokedShareAmount, revokedAssetAmount, revokedPoolAmount } = event.params;
+  await handleRevokeShares(
+    { poolId, tokenId, payoutAssetId, epoch: Number(epoch), navPoolPerShare, navAssetPerShare, revokedShareAmount, revokedAssetAmount, revokedPoolAmount },
+    event, context
+  );
+});
+
+ShareClassManager.ClaimDeposit.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, epoch, investor, depositAssetId, paymentAssetAmount, claimedShareAmount } = event.params;
+  await handleClaimDeposit(
+    { poolId, tokenId, epoch: Number(epoch), investor, depositAssetId, paymentAssetAmount, claimedShareAmount },
+    event, context
+  );
+});
+
+ShareClassManager.ClaimRedeem.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, epoch, investor, payoutAssetId, paymentShareAmount, claimedAssetAmount } = event.params;
+  await handleClaimRedeem(
+    { poolId, tokenId, epoch: Number(epoch), investor, payoutAssetId, paymentShareAmount, claimedAssetAmount },
+    event, context
+  );
+});
+
+// --- Remaining events (stubs) ---
 ShareClassManager.RemoteIssueShares.handler(async ({ event, context }) => {});
 ShareClassManager.RemoteRevokeShares.handler(async ({ event, context }) => {});

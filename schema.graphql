@@ -283,7 +283,7 @@ type TokenInstancePosition {
 type PendingInvestOrder {
   id: ID! # tokenId-assetId-account
   poolId: BigInt!
-  tokenId: String!
+  tokenId: String! @index
   assetId: BigInt!
   account: String!
   pendingAssetsAmount: BigInt
@@ -299,7 +299,7 @@ type PendingInvestOrder {
 type InvestOrder {
   id: ID! # tokenId-assetId-account-index
   poolId: BigInt!
-  tokenId: String!
+  tokenId: String! @index
   assetId: BigInt!
   account: String!
   index: Int!
@@ -331,7 +331,7 @@ type InvestOrder {
 type PendingRedeemOrder {
   id: ID! # tokenId-assetId-account
   poolId: BigInt!
-  tokenId: String!
+  tokenId: String! @index
   assetId: BigInt!
   account: String!
   pendingSharesAmount: BigInt
@@ -347,7 +347,7 @@ type PendingRedeemOrder {
 type RedeemOrder {
   id: ID! # tokenId-assetId-account-index
   poolId: BigInt!
-  tokenId: String!
+  tokenId: String! @index
   assetId: BigInt!
   account: String!
   index: Int!
@@ -488,7 +488,7 @@ type WhitelistedInvestor {
 type OutstandingInvest {
   id: ID! # tokenId-assetId-account
   poolId: BigInt!
-  tokenId: String!
+  tokenId: String! @index
   assetId: BigInt!
   account: String!
   epochIndex: Int
@@ -512,7 +512,7 @@ type OutstandingInvest {
 type OutstandingRedeem {
   id: ID! # tokenId-assetId-account
   poolId: BigInt!
-  tokenId: String!
+  tokenId: String! @index
   assetId: BigInt!
   account: String!
   epochIndex: Int
