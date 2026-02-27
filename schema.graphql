@@ -245,7 +245,7 @@ type TokenInstance {
   centrifugeId: String!
   tokenId: String!
   isActive: Boolean!
-  address: String!
+  address: String! @index
   tokenPrice: BigInt
   computedAt: Int
   totalIssuance: BigInt
@@ -795,7 +795,7 @@ type MerkleProofManager {
 
 type CrosschainPayload {
   id: ID! # payloadId-index
-  payloadId: String!
+  payloadId: String! @index
   index: Int!
   fromCentrifugeId: String!
   toCentrifugeId: String!
@@ -824,10 +824,10 @@ type CrosschainPayload {
 
 type CrosschainMessage {
   id: ID! # messageId-index
-  messageId: String!
+  messageId: String! @index
   index: Int!
   poolId: BigInt
-  payloadId: String
+  payloadId: String @index
   payloadIndex: Int
   messageType: String!
   status: CrosschainMessageStatus!
