@@ -607,8 +607,8 @@ type HoldingAccount {
 type Escrow {
   id: ID! # address-centrifugeId
   address: String!
-  poolId: BigInt!
-  centrifugeId: String!
+  poolId: BigInt! @index
+  centrifugeId: String! @index
   blockchain: Blockchain!
   # Derived relations
   holdingEscrows: [HoldingEscrow!]! @derivedFrom(field: "escrow")
@@ -714,7 +714,7 @@ type OffRampAddress {
 type Asset {
   id: ID! # assetId (bigint as string)
   centrifugeId: String
-  address: String
+  address: String @index
   assetTokenId: BigInt
   decimals: Int!
   name: String

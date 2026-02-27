@@ -588,6 +588,29 @@ Initialization logic — creates Adapter entities and Deployment records. In Hyp
 
 **Effort:** 3–4 days · **Risk:** Medium (factory contracts + cross-chain references)
 
+**Status: COMPLETE**
+
+### What Was Implemented
+
+| File | Action |
+|------|--------|
+| `schema.graphql` | Added `@index` on `Asset.address`, `Escrow.poolId`, `Escrow.centrifugeId` for `getWhere` queries |
+| `src/handlers/shared/vaultOps.ts` | **NEW** — Shared vault deploy/link/unlink logic used by both Spoke and VaultRegistry |
+| `src/handlers/Spoke.ts` | Implemented 8 handlers + 2 stubs (RegisterAsset, AddShareClass, DeployVault, UpdateSharePrice, UpdateAssetPrice, LinkVault, UnlinkVault, InitiateTransferShares) |
+| `src/handlers/Holdings.ts` | Implemented 5 handlers + 2 stubs (Initialize, Increase, Decrease, Update, UpdateValuation) |
+| `src/handlers/BalanceSheet.ts` | Implemented 3 handlers + 4 stubs (NoteDeposit, Withdraw, UpdateManager) |
+| `src/handlers/VaultRegistry.ts` | Implemented 3 handlers (VaultRegistryDeployVault, VaultRegistryLinkVault, VaultRegistryUnlinkVault) |
+
+### Key Decisions
+- Shared vault operations extracted to `src/handlers/shared/vaultOps.ts` — used by both `Spoke.DeployVault` and `VaultRegistry.VaultRegistryDeployVault`
+- `contractRegister` used for AddShareClass (registers TokenInstance ERC20) and DeployVault (registers Vault contract) in both Spoke and VaultRegistry
+- RPC calls skipped (totalSupply, vault manager, balanceOf) — data corrected by subsequent events; totalIssuance init to 0n
+- `getWhere` API requires `{ field: { _eq: value } }` operator syntax and returns arrays directly
+- `@index` schema directive required on fields queried via `getWhere` (Asset.address, Escrow.poolId, Escrow.centrifugeId)
+- HoldingAccountType mapping: non-liability 0=Asset, 1=Equity, 2=Loss, 3=Gain; liability 0=Expense, 1=Liability
+- VaultKind mapping: 0=Async, 1=Sync, 2=SyncDepositAsyncRedeem
+- InitiateTransferShares creates both TRANSFER_OUT and TRANSFER_IN InvestorTransaction records
+
 ### Source → Target
 
 | Ponder File | HyperIndex File |
@@ -595,72 +618,28 @@ Initialization logic — creates Adapter entities and Deployment records. In Hyp
 | `spokeHandlers.ts` (270 LOC) | `src/handlers/Spoke.ts` |
 | `holdingsHandlers.ts` (151 LOC) | `src/handlers/Holdings.ts` |
 | `balanceSheetHandlers.ts` (136 LOC) | `src/handlers/BalanceSheet.ts` |
-| `vaultRegistryHandlers.ts` (127 LOC) | `src/handlers/VaultRegistry.ts` |
+| `vaultRegistryHandlers.ts` (127 LOC) | `src/handlers/VaultRegistry.ts` + `src/handlers/shared/vaultOps.ts` |
 
 ### Services Eliminated
 
-| Service | LOC |
-|---------|-----|
-| TokenInstanceService | 122 |
-| TokenService | 162 |
-| HoldingService | 102 |
-| HoldingAccountService | ~40 |
-| HoldingEscrowService | 76 |
-| VaultService | ~50 |
-| InvestorTransactionService | 251 |
-| TokenInstancePositionService | 92 |
-
-### Handler Migration Details
-
-#### Spoke.ts
-
-**`Spoke:DeployVault`** — Creates Vault entity + registers factory contract:
-```typescript
-Spoke.DeployVault.handler(async ({ event, context }) => {
-  // Register the dynamic vault contract for future events
-  context.addVault(event.params.vault);
-
-  context.Vault.set({
-    id: event.params.vault,
-    // ... populate from event params
-  });
-});
-```
-
-**`Spoke:RegisterAsset`** — Creates/updates Asset with address
-**`Spoke:AddShareClass`** — Creates TokenInstance + registers tokenInstance factory contract:
-```typescript
-// Register ERC20 token for Transfer event tracking
-context.addTokenInstance(event.params.token);
-```
-
-**`Spoke:UpdateSharePrice`** — Updates TokenInstance.tokenPrice
-**`Spoke:UpdateAssetPrice`** — Updates HoldingEscrow.assetPrice
-**`Spoke:InitiateTransferShares`** — Creates InvestorTransaction (TRANSFER_OUT type)
-**`Spoke:LinkVault`** / **`Spoke:UnlinkVault`** — Updates Vault.status
-
-#### Holdings.ts
-
-**`Holdings:Initialize`** — Creates Holding + HoldingAccount entries
-**`Holdings:Increase`** / **`Holdings:Decrease`** — Updates Holding.assetQuantity / totalValue
-**`Holdings:Update`** / **`Holdings:UpdateValuation`** — Updates Holding fields
-
-#### BalanceSheet.ts
-
-**`BalanceSheet:NoteDeposit`** — Updates HoldingEscrow.assetAmount
-**`BalanceSheet:Withdraw`** — Decreases HoldingEscrow.assetAmount
-**`BalanceSheet:UpdateManager`** — Updates PoolManager.isBalancesheetManager
-
-#### VaultRegistry.ts (V3_1 only)
-
-**`VaultRegistry:DeployVault`** — Creates Vault (same as Spoke:DeployVault but from VaultRegistry)
-**`VaultRegistry:LinkVault`** / **`VaultRegistry:UnlinkVault`** — Updates Vault.status
+| Service | LOC | Replacement |
+|---------|-----|-------------|
+| TokenInstanceService | 122 | Inline `context.TokenInstance.get()`/`.set()` |
+| TokenService | 162 | Inline `context.Token.get()`/`.set()` |
+| HoldingService | 102 | Inline `context.Holding.get()`/`.set()` |
+| HoldingAccountService | ~40 | Inline `context.HoldingAccount.set()` |
+| HoldingEscrowService | 76 | Inline `context.HoldingEscrow.get()`/`.set()` |
+| VaultService | ~50 | Inline via `shared/vaultOps.ts` |
+| InvestorTransactionService | 251 | Inline `context.InvestorTransaction.set()` |
+| TokenInstancePositionService | 92 | Inline `context.TokenInstancePosition.set()` |
 
 ### Checkpoint
-- [ ] TokenInstance entities created from AddShareClass
-- [ ] Vault entities created and linked/unlinked
-- [ ] Holdings track asset quantities correctly
-- [ ] Factory-deployed contracts (vault, tokenInstance) are being indexed
+- [x] TokenInstance entities created from AddShareClass
+- [x] Vault entities created and linked/unlinked (shared between Spoke + VaultRegistry)
+- [x] Holdings track asset quantities correctly (Initialize, Increase, Decrease, Update, UpdateValuation)
+- [x] Factory-deployed contracts (vault, tokenInstance) registered via `contractRegister`
+- [x] `pnpm codegen` succeeds
+- [x] `pnpm tsc --noEmit` passes with zero errors
 - [ ] Test: process blocks containing vault deployments
 
 ---
