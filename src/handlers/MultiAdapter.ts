@@ -13,6 +13,7 @@ import {
   getMessageId,
   getPayloadId,
   extractMessagesFromPayload,
+  getVersionIndex,
 } from "../utils/messageParser";
 
 // --- SendPayload ---
@@ -27,6 +28,7 @@ MultiAdapter.SendPayload.handler(async ({ event, context }) => {
   const toCentrifugeId = toCentrifugeIdNum.toString();
   const fromCentrifugeId = getCentrifugeId(event.chainId);
   const payloadHex = payloadData as `0x${string}`;
+  const versionIndex = getVersionIndex(event.chainId, event.srcAddress);
 
   // Try to find existing payload (Underpaid or InTransit)
   const existingPayloads = await context.CrosschainPayload.getWhere({ payloadId: { _eq: payloadIdHex } });
@@ -43,7 +45,7 @@ MultiAdapter.SendPayload.handler(async ({ event, context }) => {
     payloadEntityId = crosschainPayloadId(payloadIdHex, payloadIndex);
 
     // Extract messages and link them to this payload
-    const messages = extractMessagesFromPayload(payloadHex);
+    const messages = extractMessagesFromPayload(payloadHex, versionIndex);
     let payloadPoolId: bigint | undefined;
 
     for (const msg of messages) {

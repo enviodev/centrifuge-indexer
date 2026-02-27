@@ -1,49 +1,45 @@
 // Crosschain message parsing utilities
 // Ported from api-v3/src/services/CrosschainMessageService.ts and CrosschainPayloadService.ts
 
-import { keccak256, encodePacked, toHex } from "viem";
+import { keccak256, encodePacked } from "viem";
+
+// --- Dynamic length decoder helpers ---
+
+function dynamicLengthDecoder(baseLength: number) {
+  return function (message: Buffer): number {
+    if (message.length < baseLength + 2) return 0; // Safety: not enough bytes
+    return baseLength + 2 + message.readUInt16BE(baseLength);
+  };
+}
+
+function setPoolAdaptersLengthDecoder(message: Buffer): number {
+  if (message.length < 13) return 0;
+  const length = message.readUInt16BE(11);
+  return 13 + length * 32;
+}
 
 // --- Message Type Definitions ---
+// The message type byte → type name + byte length
+// Object.keys() preserves insertion order, so index in keys array = message type byte value
 
-// V3_1 message types (index 1) — this is the version used by our contracts
-const MESSAGE_TYPES = [
-  "_Invalid",
-  "ScheduleUpgrade",
-  "CancelUpgrade",
-  "RecoverTokens",
-  "RegisterAsset",
-  "SetPoolAdapters",
-  "NotifyPool",
-  "NotifyShareClass",
-  "NotifyPricePoolPerShare",
-  "NotifyPricePoolPerAsset",
-  "NotifyShareMetadata",
-  "UpdateShareHook",
-  "InitiateTransferShares",
-  "ExecuteTransferShares",
-  "UpdateRestriction",
-  "UpdateVault",
-  "UpdateBalanceSheetManager",
-  "UpdateGatewayManager",
-  "UpdateHoldingAmount",
-  "UpdateShares",
-  "SetMaxAssetPriceAge",
-  "SetMaxSharePriceAge",
-  "Request",
-  "RequestCallback",
-  "SetRequestManager",
-  "TrustedContractUpdate",
-  "UntrustedContractUpdate",
-] as const;
-
-// Base message lengths for V3_1
-const MESSAGE_LENGTHS: Record<string, number | ((buf: Buffer) => number)> = {
-  _Invalid: 0,
+// V3 Message Types (versionIndex = 0)
+const V3_MESSAGE_TYPES = {
+  _Invalid: 0 as number | ((buf: Buffer) => number),
   ScheduleUpgrade: 33,
   CancelUpgrade: 33,
   RecoverTokens: 161,
   RegisterAsset: 18,
-  SetPoolAdapters: (buf: Buffer) => 13 + buf.readUInt16BE(11) * 32,
+  _Placeholder5: 0,
+  _Placeholder6: 0,
+  _Placeholder7: 0,
+  _Placeholder8: 0,
+  _Placeholder9: 0,
+  _Placeholder10: 0,
+  _Placeholder11: 0,
+  _Placeholder12: 0,
+  _Placeholder13: 0,
+  _Placeholder14: 0,
+  _Placeholder15: 0,
   NotifyPool: 9,
   NotifyShareClass: 250,
   NotifyPricePoolPerShare: 49,
@@ -52,7 +48,36 @@ const MESSAGE_LENGTHS: Record<string, number | ((buf: Buffer) => number)> = {
   UpdateShareHook: 57,
   InitiateTransferShares: 91,
   ExecuteTransferShares: 73,
-  UpdateRestriction: (buf: Buffer) => 25 + 2 + buf.readUInt16BE(25),
+  UpdateRestriction: dynamicLengthDecoder(25),
+  UpdateContract: dynamicLengthDecoder(57),
+  UpdateVault: 74,
+  UpdateBalanceSheetManager: 42,
+  UpdateHoldingAmount: 91,
+  UpdateShares: 59,
+  MaxAssetPriceAge: 49,
+  MaxSharePriceAge: 33,
+  Request: dynamicLengthDecoder(41),
+  RequestCallback: dynamicLengthDecoder(41),
+  SetRequestManager: 73,
+} as const;
+
+// V3_1 Message Types (versionIndex = 1)
+const V3_1_MESSAGE_TYPES = {
+  _Invalid: 0 as number | ((buf: Buffer) => number),
+  ScheduleUpgrade: 33,
+  CancelUpgrade: 33,
+  RecoverTokens: 161,
+  RegisterAsset: 18,
+  SetPoolAdapters: setPoolAdaptersLengthDecoder,
+  NotifyPool: 9,
+  NotifyShareClass: 250,
+  NotifyPricePoolPerShare: 49,
+  NotifyPricePoolPerAsset: 65,
+  NotifyShareMetadata: 185,
+  UpdateShareHook: 57,
+  InitiateTransferShares: 91,
+  ExecuteTransferShares: 73,
+  UpdateRestriction: dynamicLengthDecoder(25),
   UpdateVault: 74,
   UpdateBalanceSheetManager: 42,
   UpdateGatewayManager: 42,
@@ -60,26 +85,52 @@ const MESSAGE_LENGTHS: Record<string, number | ((buf: Buffer) => number)> = {
   UpdateShares: 59,
   SetMaxAssetPriceAge: 49,
   SetMaxSharePriceAge: 33,
-  Request: (buf: Buffer) => 41 + 2 + buf.readUInt16BE(41),
-  RequestCallback: (buf: Buffer) => 41 + 2 + buf.readUInt16BE(41),
+  Request: dynamicLengthDecoder(41),
+  RequestCallback: dynamicLengthDecoder(41),
   SetRequestManager: 73,
-  TrustedContractUpdate: (buf: Buffer) => 57 + 2 + buf.readUInt16BE(57),
-  UntrustedContractUpdate: (buf: Buffer) => 89 + 2 + buf.readUInt16BE(89),
+  TrustedContractUpdate: dynamicLengthDecoder(57),
+  UntrustedContractUpdate: dynamicLengthDecoder(89),
+} as const;
+
+const MESSAGE_TYPE_VERSIONS = [V3_MESSAGE_TYPES, V3_1_MESSAGE_TYPES] as const;
+
+// --- Version detection ---
+// Map of (chainId, contractAddress) → versionIndex
+// Default is V3 (index 0) for all current deployments
+const VERSION_OVERRIDES: Record<string, number> = {
+  // Add V3_1 overrides here when V3_1 contracts are deployed
+  // e.g., "1-0xNewGatewayAddress": 1,
 };
+
+/** Get version index (0=V3, 1=V3_1) for a contract on a given chain */
+export function getVersionIndex(chainId: number, srcAddress: string): number {
+  const key = `${chainId}-${srcAddress.toLowerCase()}`;
+  return VERSION_OVERRIDES[key] ?? 0; // Default to V3
+}
 
 // --- Core Functions ---
 
 /** Get the crosschain message type name from its numeric ID */
-export function getCrosschainMessageType(messageType: number): string {
-  return MESSAGE_TYPES[messageType] ?? "_Invalid";
+export function getCrosschainMessageType(messageType: number, versionIndex: number = 0): string {
+  const types = MESSAGE_TYPE_VERSIONS[versionIndex] ?? MESSAGE_TYPE_VERSIONS[0];
+  const keys = Object.keys(types);
+  return keys[messageType] ?? "_Invalid";
 }
 
 /** Get the total byte length of a message given its type ID and buffer */
-export function getCrosschainMessageLength(messageType: number, message: Buffer): number {
-  const typeName = getCrosschainMessageType(messageType);
-  const lengthEntry = MESSAGE_LENGTHS[typeName];
-  if (lengthEntry === undefined) return 0;
-  return typeof lengthEntry === "function" ? lengthEntry(message) : lengthEntry;
+export function getCrosschainMessageLength(messageType: number, message: Buffer, versionIndex: number = 0): number {
+  const types = MESSAGE_TYPE_VERSIONS[versionIndex] ?? MESSAGE_TYPE_VERSIONS[0];
+  const values = Object.values(types);
+  const lengthEntry = values[messageType];
+  if (lengthEntry === undefined || lengthEntry === null) return 0;
+  if (typeof lengthEntry === "function") {
+    try {
+      return (lengthEntry as (buf: Buffer) => number)(message);
+    } catch {
+      return 0; // Safety: buffer too small for dynamic length read
+    }
+  }
+  return lengthEntry as number;
 }
 
 /** Compute keccak256 hash of message bytes */
@@ -116,7 +167,7 @@ export function getPayloadId(
 }
 
 /** Extract individual messages from a concatenated batch payload */
-export function extractMessagesFromPayload(payload: `0x${string}`): `0x${string}`[] {
+export function extractMessagesFromPayload(payload: `0x${string}`, versionIndex: number = 0): `0x${string}`[] {
   const payloadBuffer = Buffer.from(payload.substring(2), "hex");
   const messages: `0x${string}`[] = [];
   let offset = 0;
@@ -124,8 +175,8 @@ export function extractMessagesFromPayload(payload: `0x${string}`): `0x${string}
   while (offset < payloadBuffer.length) {
     const messageType = payloadBuffer.readUInt8(offset);
     const currentBuffer = payloadBuffer.subarray(offset);
-    const messageLength = getCrosschainMessageLength(messageType, currentBuffer);
-    if (!messageLength) break;
+    const messageLength = getCrosschainMessageLength(messageType, currentBuffer, versionIndex);
+    if (!messageLength || messageLength > currentBuffer.length) break;
 
     const messageBytes = currentBuffer.subarray(0, messageLength);
     messages.push(`0x${messageBytes.toString("hex")}` as `0x${string}`);

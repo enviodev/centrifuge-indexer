@@ -13,6 +13,7 @@ import {
   getPayloadId,
   extractMessagesFromPayload,
   getNextIndex,
+  getVersionIndex,
 } from "../utils/messageParser";
 
 // --- PrepareMessage ---
@@ -21,10 +22,11 @@ Gateway.PrepareMessage.handler(async ({ event, context }) => {
   const { centrifugeId: toCentrifugeIdNum, poolId, message } = event.params;
   const toCentrifugeId = toCentrifugeIdNum.toString();
   const fromCentrifugeId = getCentrifugeId(event.chainId);
+  const versionIndex = getVersionIndex(event.chainId, event.srcAddress);
 
   const messageHex = message as `0x${string}`;
   const messageBuffer = Buffer.from(message.substring(2), "hex");
-  const messageType = getCrosschainMessageType(messageBuffer.readUInt8(0));
+  const messageType = getCrosschainMessageType(messageBuffer.readUInt8(0), versionIndex);
   const messageHash = getMessageHash(messageHex);
   const msgId = getMessageId(fromCentrifugeId, toCentrifugeId, messageHash);
 
@@ -76,12 +78,13 @@ Gateway.UnderpaidBatch.handler(async ({ event, context }) => {
   const payloadEntityId = crosschainPayloadId(payloadIdHash, payloadIndex);
 
   // Extract and create messages from batch
-  const messages = extractMessagesFromPayload(batchHex);
+  const versionIndex = getVersionIndex(event.chainId, event.srcAddress);
+  const messages = extractMessagesFromPayload(batchHex, versionIndex);
   let batchPoolId: bigint | undefined;
 
   for (const msg of messages) {
     const msgBuffer = Buffer.from(msg.substring(2), "hex");
-    const msgType = getCrosschainMessageType(msgBuffer.readUInt8(0));
+    const msgType = getCrosschainMessageType(msgBuffer.readUInt8(0), versionIndex);
     const msgHash = getMessageHash(msg);
     const msgId = getMessageId(fromCentrifugeId, toCentrifugeId, msgHash);
 
