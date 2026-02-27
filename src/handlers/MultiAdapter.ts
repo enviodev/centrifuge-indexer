@@ -1,5 +1,5 @@
 import { MultiAdapter } from "generated";
-import { getCentrifugeId } from "../utils/chains";
+import { getCentrifugeId, ADAPTER_ADDRESSES } from "../utils/chains";
 import { createdDefaults } from "../utils/defaults";
 import {
   adapterId as adapterIdFn,
@@ -15,6 +15,42 @@ import {
   extractMessagesFromPayload,
   getVersionIndex,
 } from "../utils/messageParser";
+
+/**
+ * Check if payload has been verified by comparing SEND vs HANDLE adapter participation counts.
+ * Returns true when HANDLE count >= SEND count (quorum met).
+ */
+async function checkPayloadVerified(
+  context: any,
+  payloadIdHex: string,
+  payloadIndex: number
+): Promise<boolean> {
+  const participations = await context.AdapterParticipation.getWhere({
+    payloadId: { _eq: payloadIdHex },
+  });
+  const relevant = participations.filter((ap: any) => ap.payloadIndex === payloadIndex);
+  const sendCount = relevant.filter((ap: any) => ap.side === "SEND").length;
+  const handleCount = relevant.filter((ap: any) => ap.side === "HANDLE").length;
+  return sendCount > 0 && handleCount >= sendCount;
+}
+
+/** Ensure Adapter entity exists for a given adapter address on a chain. */
+async function ensureAdapter(
+  context: any,
+  adapterAddress: string,
+  centrifugeId: string,
+  event: any
+) {
+  const addr = adapterAddress.toLowerCase();
+  const id = adapterIdFn(addr, centrifugeId);
+  await context.Adapter.getOrCreate({
+    id,
+    address: addr,
+    centrifugeId,
+    name: ADAPTER_ADDRESSES[addr] ?? undefined,
+    ...createdDefaults(event),
+  });
+}
 
 // --- SendPayload ---
 
@@ -133,6 +169,7 @@ MultiAdapter.SendPayload.handler(async ({ event, context }) => {
 
   // Create AdapterParticipation
   const adapterAddress = adapter.toLowerCase();
+  await ensureAdapter(context, adapterAddress, fromCentrifugeId, event);
   const apId = adapterParticipationId(payloadIdHex, payloadIndex, adapterAddress, "SEND", "PAYLOAD");
   context.AdapterParticipation.set({
     id: apId,
@@ -173,6 +210,7 @@ MultiAdapter.SendProof.handler(async ({ event, context }) => {
 
   // Create AdapterParticipation
   const adapterAddress = adapter.toLowerCase();
+  await ensureAdapter(context, adapterAddress, fromCentrifugeId, event);
   const apId = adapterParticipationId(payloadIdHex, payloadIndex, adapterAddress, "SEND", "PROOF");
   context.AdapterParticipation.set({
     id: apId,
@@ -244,38 +282,11 @@ MultiAdapter.HandlePayload.handler(async ({ event, context }) => {
   } else {
     payloadIndex = payload.index;
     payloadEntityId = payload.id;
-
-    // Mark as Delivered if InTransit
-    if (payload.status === "InTransit") {
-      context.CrosschainPayload.set({
-        ...payload,
-        status: "Delivered",
-        deliveredAt: event.block.timestamp,
-        deliveredAtBlock: event.block.number,
-        deliveredAtTxHash: event.transaction.hash,
-      });
-
-      // Check if all messages are already executed → mark as completed
-      const payloadMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: payloadIdHex } });
-      const relevantMessages = payloadMessages.filter((m: any) => m.payloadIndex === payloadIndex);
-      const allExecuted = relevantMessages.length > 0 && relevantMessages.every((m: any) => m.status === "Executed");
-      if (allExecuted) {
-        const updatedPayload = await context.CrosschainPayload.get(payloadEntityId);
-        if (updatedPayload) {
-          context.CrosschainPayload.set({
-            ...updatedPayload,
-            status: "Completed",
-            completedAt: event.block.timestamp,
-            completedAtBlock: event.block.number,
-            completedAtTxHash: event.transaction.hash,
-          });
-        }
-      }
-    }
   }
 
-  // Create AdapterParticipation
+  // Create AdapterParticipation (before quorum check so it's counted)
   const adapterAddress = adapter.toLowerCase();
+  await ensureAdapter(context, adapterAddress, toCentrifugeId, event);
   const apId = adapterParticipationId(payloadIdHex, payloadIndex, adapterAddress, "HANDLE", "PAYLOAD");
   context.AdapterParticipation.set({
     id: apId,
@@ -296,6 +307,40 @@ MultiAdapter.HandlePayload.handler(async ({ event, context }) => {
     fromBlockchain_id: blockchainId(fromCentrifugeId),
     toBlockchain_id: blockchainId(toCentrifugeId),
   });
+
+  // Quorum check: only mark InTransit → Delivered when SEND count == HANDLE count
+  if (payload && payload.status === "InTransit") {
+    const verified = await checkPayloadVerified(context, payloadIdHex, payloadIndex);
+    if (verified) {
+      const currentPayload = await context.CrosschainPayload.get(payloadEntityId);
+      if (currentPayload) {
+        context.CrosschainPayload.set({
+          ...currentPayload,
+          status: "Delivered",
+          deliveredAt: event.block.timestamp,
+          deliveredAtBlock: event.block.number,
+          deliveredAtTxHash: event.transaction.hash,
+        });
+
+        // Check if all messages are already executed → mark as completed
+        const payloadMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: payloadIdHex } });
+        const relevantMessages = payloadMessages.filter((m: any) => m.payloadIndex === payloadIndex);
+        const allExecuted = relevantMessages.length > 0 && relevantMessages.every((m: any) => m.status === "Executed");
+        if (allExecuted) {
+          const updatedPayload = await context.CrosschainPayload.get(payloadEntityId);
+          if (updatedPayload) {
+            context.CrosschainPayload.set({
+              ...updatedPayload,
+              status: "Completed",
+              completedAt: event.block.timestamp,
+              completedAtBlock: event.block.number,
+              completedAtTxHash: event.transaction.hash,
+            });
+          }
+        }
+      }
+    }
+  }
 });
 
 // --- HandleProof ---
@@ -344,38 +389,11 @@ MultiAdapter.HandleProof.handler(async ({ event, context }) => {
   } else {
     payloadIndex = payload.index;
     payloadEntityId = payload.id;
-
-    // Mark as Delivered if InTransit
-    if (payload.status === "InTransit") {
-      context.CrosschainPayload.set({
-        ...payload,
-        status: "Delivered",
-        deliveredAt: event.block.timestamp,
-        deliveredAtBlock: event.block.number,
-        deliveredAtTxHash: event.transaction.hash,
-      });
-
-      // Check if all messages are already executed → mark as completed
-      const payloadMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: payloadIdHex } });
-      const relevantMessages = payloadMessages.filter((m: any) => m.payloadIndex === payloadIndex);
-      const allExecuted = relevantMessages.length > 0 && relevantMessages.every((m: any) => m.status === "Executed");
-      if (allExecuted) {
-        const updatedPayload = await context.CrosschainPayload.get(payloadEntityId);
-        if (updatedPayload) {
-          context.CrosschainPayload.set({
-            ...updatedPayload,
-            status: "Completed",
-            completedAt: event.block.timestamp,
-            completedAtBlock: event.block.number,
-            completedAtTxHash: event.transaction.hash,
-          });
-        }
-      }
-    }
   }
 
-  // Create AdapterParticipation
+  // Create AdapterParticipation (before quorum check so it's counted)
   const adapterAddress = adapter.toLowerCase();
+  await ensureAdapter(context, adapterAddress, toCentrifugeId, event);
   const apId = adapterParticipationId(payloadIdHex, payloadIndex, adapterAddress, "HANDLE", "PROOF");
   context.AdapterParticipation.set({
     id: apId,
@@ -396,6 +414,40 @@ MultiAdapter.HandleProof.handler(async ({ event, context }) => {
     fromBlockchain_id: blockchainId(fromCentrifugeId),
     toBlockchain_id: blockchainId(toCentrifugeId),
   });
+
+  // Quorum check: only mark InTransit → Delivered when SEND count == HANDLE count
+  if (payload && payload.status === "InTransit") {
+    const verified = await checkPayloadVerified(context, payloadIdHex, payloadIndex);
+    if (verified) {
+      const currentPayload = await context.CrosschainPayload.get(payloadEntityId);
+      if (currentPayload) {
+        context.CrosschainPayload.set({
+          ...currentPayload,
+          status: "Delivered",
+          deliveredAt: event.block.timestamp,
+          deliveredAtBlock: event.block.number,
+          deliveredAtTxHash: event.transaction.hash,
+        });
+
+        // Check if all messages are already executed → mark as completed
+        const payloadMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: payloadIdHex } });
+        const relevantMessages = payloadMessages.filter((m: any) => m.payloadIndex === payloadIndex);
+        const allExecuted = relevantMessages.length > 0 && relevantMessages.every((m: any) => m.status === "Executed");
+        if (allExecuted) {
+          const updatedPayload = await context.CrosschainPayload.get(payloadEntityId);
+          if (updatedPayload) {
+            context.CrosschainPayload.set({
+              ...updatedPayload,
+              status: "Completed",
+              completedAt: event.block.timestamp,
+              completedAtBlock: event.block.number,
+              completedAtTxHash: event.transaction.hash,
+            });
+          }
+        }
+      }
+    }
+  }
 });
 
 // --- FileAdapters ---

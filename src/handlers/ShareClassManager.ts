@@ -1,7 +1,7 @@
 import { ShareClassManager } from "generated";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
-import { tokenId as tokenIdFn, blockchainId } from "../utils/ids";
+import { tokenId as tokenIdFn, blockchainId, holdingEscrowId, snapshotId } from "../utils/ids";
 import {
   handleUpdateDepositRequest,
   handleUpdateRedeemRequest,
@@ -113,6 +113,60 @@ ShareClassManager.UpdateShareClass.handler(async ({ event, context }) => {
     tokenPrice,
     ...updatedDefaults(event),
   });
+
+  // Event-triggered TokenSnapshot
+  const trigger = "shareClassManagerV3:UpdateShareClass";
+  context.TokenSnapshot.set({
+    id: `${tId}-${event.block.number}-${trigger}`,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    trigger,
+    triggerTxHash: event.transaction.hash,
+    triggerChainId: event.chainId.toString(),
+    tokenId: tId,
+    tokenPrice,
+    totalIssuance: existing.totalIssuance ?? undefined,
+    tokenPriceComputedAt: existing.tokenPriceComputedAt ?? undefined,
+  });
+});
+
+// --- UpdatePricePoolPerShare (v3.1 — includes computedAt timestamp) ---
+
+ShareClassManager.UpdatePricePoolPerShare.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, price: tokenPrice, computedAt: computedAtTimestamp } = event.params;
+
+  const tId = tokenIdFn(poolId, tokenId);
+  const existing = await context.Token.get(tId);
+  if (!existing) {
+    context.log.warn(`Token ${tId} not found for UpdatePricePoolPerShare`);
+    return;
+  }
+
+  // computedAt is a unix timestamp in seconds
+  const computedAt = Number(computedAtTimestamp);
+
+  context.Token.set({
+    ...existing,
+    tokenPrice,
+    tokenPriceComputedAt: computedAt,
+    ...updatedDefaults(event),
+  });
+
+  // Event-triggered TokenSnapshot
+  const centrifugeId = getCentrifugeId(event.chainId);
+  const trigger = "shareClassManagerV3_1:UpdatePricePoolPerShare";
+  context.TokenSnapshot.set({
+    id: `${tId}-${event.block.number}-${trigger}`,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    trigger,
+    triggerTxHash: event.transaction.hash,
+    triggerChainId: event.chainId.toString(),
+    tokenId: tId,
+    tokenPrice,
+    totalIssuance: existing.totalIssuance ?? undefined,
+    tokenPriceComputedAt: computedAt,
+  });
 });
 
 // --- Order Lifecycle Handlers ---
@@ -139,6 +193,25 @@ ShareClassManager.ApproveDeposits.handler(async ({ event, context }) => {
     { poolId, tokenId, depositAssetId, epoch: Number(epoch), approvedPoolAmount, approvedAssetAmount, pendingAssetAmount },
     event, context
   );
+
+  // Event-triggered HoldingEscrowSnapshot
+  const heId = holdingEscrowId(tokenId, depositAssetId);
+  const he = await context.HoldingEscrow.get(heId);
+  if (he) {
+    const trigger = "shareClassManager:ApproveDeposits";
+    context.HoldingEscrowSnapshot.set({
+      id: snapshotId(`${tokenId}-${depositAssetId}`, event.block.number, trigger),
+      timestamp: event.block.timestamp,
+      blockNumber: event.block.number,
+      trigger,
+      triggerTxHash: event.transaction.hash,
+      triggerChainId: event.chainId.toString(),
+      tokenId,
+      assetId: depositAssetId,
+      assetAmount: he.assetAmount ?? undefined,
+      assetPrice: he.assetPrice ?? undefined,
+    });
+  }
 });
 
 ShareClassManager.ApproveRedeems.handler(async ({ event, context }) => {
@@ -147,6 +220,25 @@ ShareClassManager.ApproveRedeems.handler(async ({ event, context }) => {
     { poolId, tokenId, payoutAssetId, epoch: Number(epoch), approvedShareAmount, pendingShareAmount },
     event, context
   );
+
+  // Event-triggered HoldingEscrowSnapshot
+  const heId = holdingEscrowId(tokenId, payoutAssetId);
+  const he = await context.HoldingEscrow.get(heId);
+  if (he) {
+    const trigger = "shareClassManager:ApproveRedeems";
+    context.HoldingEscrowSnapshot.set({
+      id: snapshotId(`${tokenId}-${payoutAssetId}`, event.block.number, trigger),
+      timestamp: event.block.timestamp,
+      blockNumber: event.block.number,
+      trigger,
+      triggerTxHash: event.transaction.hash,
+      triggerChainId: event.chainId.toString(),
+      tokenId,
+      assetId: payoutAssetId,
+      assetAmount: he.assetAmount ?? undefined,
+      assetPrice: he.assetPrice ?? undefined,
+    });
+  }
 });
 
 ShareClassManager.IssueShares.handler(async ({ event, context }) => {

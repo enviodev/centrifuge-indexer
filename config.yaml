@@ -98,6 +98,7 @@ contracts:
         name: "AddShareClassShort"
       - event: "UpdateMetadata(uint64 indexed poolId, bytes16 indexed scId, string name, string symbol)"
       - event: "UpdateShareClass(uint64 indexed poolId, bytes16 indexed scId, uint128 navPoolPerShare)"
+      - event: "UpdatePricePoolPerShare(uint64 indexed poolId, bytes16 indexed scId, uint128 price, uint64 computedAt)"
       - event: "UpdateDepositRequest(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed depositAssetId, uint32 epoch, bytes32 investor, uint128 pendingUserAssetAmount, uint128 pendingTotalAssetAmount, uint128 queuedUserAssetAmount, bool pendingCancellation)"
       - event: "UpdateRedeemRequest(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed payoutAssetId, uint32 epoch, bytes32 investor, uint128 pendingUserShareAmount, uint128 pendingTotalShareAmount, uint128 queuedUserShareAmount, bool pendingCancellation)"
       - event: "ApproveDeposits(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed depositAssetId, uint32 epoch, uint128 approvedPoolAmount, uint128 approvedAssetAmount, uint128 pendingAssetAmount)"

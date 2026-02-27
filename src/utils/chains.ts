@@ -66,3 +66,33 @@ export function getCentrifugeId(chainId: number): string {
   if (!id) throw new Error(`No centrifugeId mapping for chainId ${chainId}`);
   return id;
 }
+
+// Reverse mapping: centrifugeId → EVM chainId string
+export const chainIdByCentrifugeId: Record<string, string> = Object.fromEntries(
+  Object.entries(centrifugeIds).map(([chainId, centId]) => [centId, chainId])
+);
+
+/** Get chain metadata (network name, explorer, icon) for a centrifugeId. */
+export function getChainMetadata(centrifugeId: string): {
+  network: string;
+  chainId: string | undefined;
+  explorer: string | undefined;
+  icon: string | undefined;
+} {
+  const chainId = chainIdByCentrifugeId[centrifugeId];
+  return {
+    network: chainId ? (networkNames[chainId] ?? centrifugeId) : centrifugeId,
+    chainId,
+    explorer: chainId ? explorerUrls[chainId] : undefined,
+    icon: chainId ? chainIcons[chainId] : undefined,
+  };
+}
+
+// Known adapter addresses (CREATE2 deterministic, same across all chains except Plume)
+export const ADAPTER_ADDRESSES: Record<string, string> = {
+  "0x6b98679eec5b5de3a803dc801b2f12adddcd39ec": "wormhole",
+  "0x52271c9a29d0f97c350bbe32b3377cdd26026d0a": "axelar",
+};
+
+// Global escrow address (same across all chains)
+export const GLOBAL_ESCROW_ADDRESS = "0x43d51be0b6de2199a2396ba604114d24383f91e9";

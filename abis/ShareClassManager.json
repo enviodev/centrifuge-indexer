@@ -2090,6 +2090,37 @@
     "anonymous": false
   },
   {
+    "type": "event",
+    "name": "UpdatePricePoolPerShare",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "uint64",
+        "indexed": true,
+        "internalType": "PoolId"
+      },
+      {
+        "name": "scId",
+        "type": "bytes16",
+        "indexed": true,
+        "internalType": "ShareClassId"
+      },
+      {
+        "name": "price",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "D18"
+      },
+      {
+        "name": "computedAt",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
     "type": "error",
     "name": "AlreadyIssued",
     "inputs": []

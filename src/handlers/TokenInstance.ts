@@ -1,11 +1,12 @@
 import { TokenInstance } from "generated";
-import { getCentrifugeId } from "../utils/chains";
+import { getCentrifugeId, GLOBAL_ESCROW_ADDRESS } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import {
   tokenInstancePositionId,
   investorTransactionId,
   accountId,
   blockchainId,
+  deploymentId,
   tokenId as tokenIdFn,
 } from "../utils/ids";
 
@@ -25,12 +26,16 @@ TokenInstance.Transfer.handler(async ({ event, context }) => {
   }
   const { tokenId } = tokenInstance;
 
-  const isFromNull = from.toLowerCase() === ZERO_ADDRESS;
-  const isToNull = to.toLowerCase() === ZERO_ADDRESS;
+  const fromLower = from.toLowerCase();
+  const toLower = to.toLowerCase();
+  const isFromNull = fromLower === ZERO_ADDRESS;
+  const isToNull = toLower === ZERO_ADDRESS;
 
-  // TODO: Filter out globalEscrow transfers (requires Deployment entity)
-  const isFromUserAccount = !isFromNull;
-  const isToUserAccount = !isToNull;
+  // Filter out globalEscrow transfers — these are protocol-level, not user transfers
+  const isFromGlobalEscrow = fromLower === GLOBAL_ESCROW_ADDRESS;
+  const isToGlobalEscrow = toLower === GLOBAL_ESCROW_ADDRESS;
+  const isFromUserAccount = !isFromNull && !isFromGlobalEscrow;
+  const isToUserAccount = !isToNull && !isToGlobalEscrow;
 
   // Update 'from' position balance
   if (isFromUserAccount) {

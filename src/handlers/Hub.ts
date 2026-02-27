@@ -1,7 +1,7 @@
 import { Hub } from "generated";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import { poolSpokeBlockchainId, whitelistedInvestorId, accountId, blockchainId } from "../utils/ids";
-import { getCentrifugeId, networkNames, explorerUrls, chainIcons } from "../utils/chains";
+import { getChainMetadata } from "../utils/chains";
 
 // --- UpdateRestriction payload decoding ---
 
@@ -48,17 +48,17 @@ Hub.NotifyPool.handler(async ({ event, context }) => {
   const { centrifugeId: spokeCentrifugeIdRaw, poolId } = event.params;
   const spokeCentrifugeId = spokeCentrifugeIdRaw.toString();
 
-  // Ensure the spoke blockchain entity exists
-  const chainIdStr = event.chainId.toString();
+  // Ensure the spoke blockchain entity exists (use spoke chain metadata, not hub chain)
+  const spokeMetadata = getChainMetadata(spokeCentrifugeId);
   await context.Blockchain.getOrCreate({
     id: blockchainId(spokeCentrifugeId),
     centrifugeId: spokeCentrifugeId,
-    network: networkNames[chainIdStr] ?? spokeCentrifugeId,
+    network: spokeMetadata.network,
     lastPeriodStart: undefined,
-    chainId: undefined,
-    name: undefined,
-    explorer: undefined,
-    icon: undefined,
+    chainId: spokeMetadata.chainId ? Number(spokeMetadata.chainId) : undefined,
+    name: spokeMetadata.network,
+    explorer: spokeMetadata.explorer ?? undefined,
+    icon: spokeMetadata.icon ?? undefined,
   });
 
   context.PoolSpokeBlockchain.set({

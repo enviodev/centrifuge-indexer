@@ -878,7 +878,7 @@ type AdapterWiring {
 
 type AdapterParticipation {
   id: ID! # payloadId-payloadIndex-adapterId-side-type
-  payloadId: String!
+  payloadId: String! @index
   payloadIndex: Int!
   adapterId: String!
   centrifugeId: String!

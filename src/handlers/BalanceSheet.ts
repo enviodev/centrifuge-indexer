@@ -1,7 +1,7 @@
 import { BalanceSheet } from "generated";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
-import { holdingEscrowId, poolManagerId, accountId, blockchainId } from "../utils/ids";
+import { holdingEscrowId, poolManagerId, accountId, blockchainId, snapshotId } from "../utils/ids";
 
 BalanceSheet.NoteDeposit.handler(async ({ event, context }) => {
   const { poolId, scId: tokenId, asset: assetAddress, amount, pricePoolPerAsset } = event.params;
@@ -44,6 +44,21 @@ BalanceSheet.NoteDeposit.handler(async ({ event, context }) => {
     asset_id: asset.id,
     escrow_id: existing?.escrow_id ?? escrow.id,
     ...(existing ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
+  });
+
+  // Event-triggered HoldingEscrowSnapshot
+  const trigger = "balanceSheet:NoteDeposit";
+  context.HoldingEscrowSnapshot.set({
+    id: snapshotId(`${tokenId}-${assetId}`, event.block.number, trigger),
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    trigger,
+    triggerTxHash: event.transaction.hash,
+    triggerChainId: event.chainId.toString(),
+    tokenId,
+    assetId,
+    assetAmount: newAssetAmount,
+    assetPrice: pricePoolPerAsset,
   });
 });
 
@@ -89,6 +104,21 @@ BalanceSheet.Withdraw.handler(async ({ event, context }) => {
     asset_id: asset.id,
     escrow_id: existing?.escrow_id ?? escrow.id,
     ...(existing ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
+  });
+
+  // Event-triggered HoldingEscrowSnapshot
+  const trigger = "balanceSheet:Withdraw";
+  context.HoldingEscrowSnapshot.set({
+    id: snapshotId(`${tokenId}-${assetId}`, event.block.number, trigger),
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    trigger,
+    triggerTxHash: event.transaction.hash,
+    triggerChainId: event.chainId.toString(),
+    tokenId,
+    assetId,
+    assetAmount: newAssetAmount,
+    assetPrice: pricePoolPerAsset,
   });
 });
 

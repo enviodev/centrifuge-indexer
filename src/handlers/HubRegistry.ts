@@ -1,8 +1,8 @@
 import { HubRegistry } from "generated";
 import "./Snapshots"; // Side-effect import — registers onBlock handlers
-import { getCentrifugeId, networkNames, explorerUrls, chainIcons } from "../utils/chains";
+import { getCentrifugeId, networkNames, explorerUrls, chainIcons, GLOBAL_ESCROW_ADDRESS } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
-import { poolManagerId, assetRegistrationId, accountId, blockchainId } from "../utils/ids";
+import { poolManagerId, assetRegistrationId, accountId, blockchainId, deploymentId } from "../utils/ids";
 import { ISO_CURRENCIES } from "../utils/constants";
 import { fetchPoolMetadata } from "../effects/ipfs";
 import { initV2WhitelistedInvestors } from "../utils/v2-setup";
@@ -24,6 +24,16 @@ HubRegistry.NewPool.handler(async ({ event, context }) => {
     name: networkNames[chainIdStr],
     explorer: explorerUrls[chainIdStr],
     icon: chainIcons[chainIdStr],
+  });
+
+  // getOrCreate Deployment (stores globalEscrow address per chain)
+  await context.Deployment.getOrCreate({
+    id: deploymentId(event.chainId),
+    chainId: chainIdStr,
+    centrifugeId,
+    globalEscrow: GLOBAL_ESCROW_ADDRESS,
+    blockchain_id: blockchainId(centrifugeId),
+    ...createdDefaults(event),
   });
 
   // Determine decimals: ISO currencies (assetId < 1000) use 18, else look up Asset
