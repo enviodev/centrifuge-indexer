@@ -1,0 +1,976 @@
+# =============================================================================
+# Centrifuge Indexer — GraphQL Schema
+# Translated from api-v3/ponder.schema.ts
+# =============================================================================
+
+# --- Enums -------------------------------------------------------------------
+
+enum VaultKind {
+  Async
+  Sync
+  SyncDepositAsyncRedeem
+}
+
+enum VaultStatus {
+  LinkInProgress
+  UnlinkInProgress
+  Linked
+  Unlinked
+}
+
+enum InvestorTransactionType {
+  DEPOSIT_REQUEST_UPDATED
+  REDEEM_REQUEST_UPDATED
+  DEPOSIT_REQUEST_CANCELLED
+  REDEEM_REQUEST_CANCELLED
+  DEPOSIT_REQUEST_EXECUTED
+  REDEEM_REQUEST_EXECUTED
+  DEPOSIT_CLAIMABLE
+  REDEEM_CLAIMABLE
+  DEPOSIT_CLAIMED
+  REDEEM_CLAIMED
+  SYNC_DEPOSIT
+  SYNC_REDEEM
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
+enum HoldingAccountType {
+  Asset
+  Equity
+  Loss
+  Gain
+  Expense
+  Liability
+}
+
+enum CrosschainPayloadStatus {
+  Underpaid
+  InTransit
+  Delivered
+  PartiallyFailed
+  Completed
+}
+
+enum CrosschainMessageStatus {
+  Unsent
+  AwaitingBatchDelivery
+  Failed
+  Executed
+}
+
+enum AdapterParticipationType {
+  PAYLOAD
+  PROOF
+}
+
+enum AdapterParticipationSide {
+  SEND
+  HANDLE
+}
+
+# --- Core Entities -----------------------------------------------------------
+
+type Blockchain {
+  id: ID!
+  centrifugeId: String!
+  network: String!
+  lastPeriodStart: Int
+  chainId: Int
+  name: String
+  explorer: String
+  icon: String
+  # Derived relations
+  hubPools: [Pool!]! @derivedFrom(field: "blockchain")
+  spokePools: [PoolSpokeBlockchain!]! @derivedFrom(field: "blockchain")
+  tokens: [Token!]! @derivedFrom(field: "blockchain")
+  tokenInstances: [TokenInstance!]! @derivedFrom(field: "blockchain")
+  vaults: [Vault!]! @derivedFrom(field: "blockchain")
+  assets: [Asset!]! @derivedFrom(field: "blockchain")
+  assetRegistrations: [AssetRegistration!]! @derivedFrom(field: "blockchain")
+  investorTransactions: [InvestorTransaction!]! @derivedFrom(field: "blockchain")
+  holdings: [Holding!]! @derivedFrom(field: "blockchain")
+  holdingEscrows: [HoldingEscrow!]! @derivedFrom(field: "blockchain")
+  escrows: [Escrow!]! @derivedFrom(field: "blockchain")
+}
+
+type Deployment {
+  id: ID! # chainId
+  chainId: String!
+  centrifugeId: String!
+  globalEscrow: String
+  blockchain: Blockchain!
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type Pool {
+  id: ID! # poolId (bigint as string)
+  centrifugeId: String!
+  isActive: Boolean!
+  currency: BigInt
+  decimals: Int
+  metadata: String
+  name: String
+  blockchain: Blockchain!
+  asset: Asset
+  # Derived relations
+  spokeBlockchains: [PoolSpokeBlockchain!]! @derivedFrom(field: "pool")
+  tokens: [Token!]! @derivedFrom(field: "pool")
+  snapshots: [PoolSnapshot!]! @derivedFrom(field: "pool")
+  managers: [PoolManager!]! @derivedFrom(field: "pool")
+  policies: [Policy!]! @derivedFrom(field: "pool")
+  merkleProofManagers: [MerkleProofManager!]! @derivedFrom(field: "pool")
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type PoolSpokeBlockchain {
+  id: ID! # poolId-centrifugeId
+  poolId: BigInt!
+  centrifugeId: String!
+  pool: Pool!
+  blockchain: Blockchain!
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+}
+
+type Token {
+  id: ID! # hex tokenId
+  index: Int
+  isActive: Boolean!
+  centrifugeId: String
+  poolId: BigInt!
+  decimals: Int
+  name: String
+  symbol: String
+  salt: String
+  totalIssuance: BigInt
+  tokenPrice: BigInt
+  tokenPriceComputedAt: Int
+  blockchain: Blockchain
+  pool: Pool!
+  # Derived relations
+  vaults: [Vault!]! @derivedFrom(field: "token")
+  tokenInstances: [TokenInstance!]! @derivedFrom(field: "token")
+  investorTransactions: [InvestorTransaction!]! @derivedFrom(field: "token")
+  outstandingInvests: [OutstandingInvest!]! @derivedFrom(field: "token")
+  onOffRampManagers: [OnOffRampManager!]! @derivedFrom(field: "token")
+  onRampAssets: [OnRampAsset!]! @derivedFrom(field: "token")
+  offRampAddresses: [OffRampAddress!]! @derivedFrom(field: "token")
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+# --- Vault Entities ----------------------------------------------------------
+
+type Vault {
+  id: ID! # address-centrifugeId
+  centrifugeId: String!
+  isActive: Boolean!
+  kind: VaultKind
+  status: VaultStatus
+  poolId: BigInt!
+  tokenId: String!
+  assetId: BigInt!
+  assetAddress: String!
+  factory: String!
+  manager: String
+  blockchain: Blockchain!
+  token: Token!
+  asset: Asset
+  tokenInstance: TokenInstance
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type VaultInvestOrder {
+  id: ID! # tokenId-centrifugeId-assetId-accountAddress
+  centrifugeId: String!
+  poolId: BigInt!
+  tokenId: String!
+  accountAddress: String!
+  assetId: BigInt!
+  requestedAssetsAmount: BigInt
+  claimableAssetsAmount: BigInt
+  epochIndex: Int
+  vault: Vault
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type VaultRedeemOrder {
+  id: ID! # tokenId-centrifugeId-assetId-accountAddress
+  centrifugeId: String!
+  poolId: BigInt!
+  tokenId: String!
+  accountAddress: String!
+  assetId: BigInt!
+  requestedSharesAmount: BigInt
+  claimableSharesAmount: BigInt
+  vault: Vault
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+# --- Token Instance Entities -------------------------------------------------
+
+type TokenInstance {
+  id: ID! # centrifugeId-tokenId
+  centrifugeId: String!
+  tokenId: String!
+  isActive: Boolean!
+  address: String!
+  tokenPrice: BigInt
+  computedAt: Int
+  totalIssuance: BigInt
+  blockchain: Blockchain!
+  token: Token!
+  # Derived relations
+  vaults: [Vault!]! @derivedFrom(field: "tokenInstance")
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type TokenInstancePosition {
+  id: ID! # tokenId-centrifugeId-accountAddress
+  tokenId: String!
+  centrifugeId: String!
+  accountAddress: String!
+  balance: BigInt
+  isFrozen: Boolean!
+  tokenInstance: TokenInstance
+  account: Account
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+# --- Invest/Redeem Order Entities --------------------------------------------
+
+type PendingInvestOrder {
+  id: ID! # tokenId-assetId-account
+  poolId: BigInt!
+  tokenId: String!
+  assetId: BigInt!
+  account: String!
+  pendingAssetsAmount: BigInt
+  queuedAssetsAmount: BigInt
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type InvestOrder {
+  id: ID! # tokenId-assetId-account-index
+  poolId: BigInt!
+  tokenId: String!
+  assetId: BigInt!
+  account: String!
+  index: Int!
+  approvedAt: Int
+  approvedAtBlock: Int
+  approvedAtTxHash: String
+  approvedIndex: Int
+  approvedAssetsAmount: BigInt
+  issuedSharesAmount: BigInt
+  issuedWithNavPoolPerShare: BigInt
+  issuedWithNavAssetPerShare: BigInt
+  issuedAt: Int
+  issuedAtBlock: Int
+  issuedAtTxHash: String
+  claimedAt: Int
+  claimedAtBlock: Int
+  claimedAtTxHash: String
+  claimedSharesAmount: BigInt
+  token: Token!
+  investAsset: Asset
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type PendingRedeemOrder {
+  id: ID! # tokenId-assetId-account
+  poolId: BigInt!
+  tokenId: String!
+  assetId: BigInt!
+  account: String!
+  pendingSharesAmount: BigInt
+  queuedSharesAmount: BigInt
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type RedeemOrder {
+  id: ID! # tokenId-assetId-account-index
+  poolId: BigInt!
+  tokenId: String!
+  assetId: BigInt!
+  account: String!
+  index: Int!
+  approvedAt: Int
+  approvedAtBlock: Int
+  approvedAtTxHash: String
+  approvedIndex: Int
+  approvedSharesAmount: BigInt
+  revokedAt: Int
+  revokedAtBlock: Int
+  revokedAtTxHash: String
+  revokedSharesAmount: BigInt
+  revokedAssetsAmount: BigInt
+  revokedPoolAmount: BigInt
+  revokedWithNavPoolPerShare: BigInt
+  revokedWithNavAssetPerShare: BigInt
+  claimedAt: Int
+  claimedAtBlock: Int
+  claimedAtTxHash: String
+  claimedAssetsAmount: BigInt
+  token: Token!
+  redeemAsset: Asset
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type EpochInvestOrder {
+  id: ID! # tokenId-assetId-index
+  poolId: BigInt!
+  tokenId: String!
+  assetId: BigInt!
+  index: Int!
+  approvedAt: Int
+  approvedAtBlock: Int
+  approvedAtTxHash: String
+  approvedAssetsAmount: BigInt
+  approvedPoolAmount: BigInt
+  approvedPercentageOfTotalPending: BigInt
+  issuedAt: Int
+  issuedAtBlock: Int
+  issuedAtTxHash: String
+  issuedSharesAmount: BigInt
+  issuedWithNavPoolPerShare: BigInt
+  issuedWithNavAssetPerShare: BigInt
+  token: Token!
+  epochInvestAsset: Asset
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type EpochRedeemOrder {
+  id: ID! # tokenId-assetId-index
+  poolId: BigInt!
+  tokenId: String!
+  assetId: BigInt!
+  index: Int!
+  approvedAt: Int
+  approvedAtBlock: Int
+  approvedAtTxHash: String
+  approvedSharesAmount: BigInt
+  approvedPercentageOfTotalPending: BigInt
+  revokedAt: Int
+  revokedAtBlock: Int
+  revokedAtTxHash: String
+  revokedSharesAmount: BigInt
+  revokedAssetsAmount: BigInt
+  revokedPoolAmount: BigInt
+  revokedWithNavPoolPerShare: BigInt
+  revokedWithNavAssetPerShare: BigInt
+  token: Token!
+  epochRedeemAsset: Asset
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+# --- Investor Transaction Entities -------------------------------------------
+
+type InvestorTransaction {
+  id: ID! # poolId-tokenId-account-type-createdAtTxHash
+  txHash: String!
+  centrifugeId: String!
+  poolId: BigInt!
+  tokenId: String!
+  type: InvestorTransactionType!
+  account: String!
+  epochIndex: Int
+  tokenAmount: BigInt
+  currencyAmount: BigInt
+  tokenPrice: BigInt
+  transactionFee: BigInt
+  fromAccount: String
+  toAccount: String
+  fromCentrifugeId: String
+  toCentrifugeId: String
+  currencyAssetId: BigInt
+  blockchain: Blockchain!
+  pool: Pool!
+  token: Token!
+  currencyAsset: Asset
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+}
+
+type WhitelistedInvestor {
+  id: ID! # tokenId-centrifugeId-accountAddress
+  poolId: BigInt!
+  tokenId: String!
+  accountAddress: String!
+  centrifugeId: String!
+  isFrozen: Boolean!
+  validUntil: Int
+  token: Token
+  investorAccount: Account
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+# --- OPTIONAL: Deprecated Entities -------------------------------------------
+# These 4 entities are deprecated but included for backward compatibility
+
+type OutstandingInvest {
+  id: ID! # tokenId-assetId-account
+  poolId: BigInt!
+  tokenId: String!
+  assetId: BigInt!
+  account: String!
+  epochIndex: Int
+  pendingAmount: BigInt
+  queuedAmount: BigInt
+  depositAmount: BigInt
+  approvedAmount: BigInt
+  approvedIndex: Int
+  approvedAt: Int
+  approvedAtBlock: Int
+  approvedAtTxHash: String
+  token: Token!
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type OutstandingRedeem {
+  id: ID! # tokenId-assetId-account
+  poolId: BigInt!
+  tokenId: String!
+  assetId: BigInt!
+  account: String!
+  epochIndex: Int
+  depositAmount: BigInt
+  pendingAmount: BigInt
+  queuedAmount: BigInt
+  approvedAmount: BigInt
+  approvedIndex: Int
+  approvedAt: Int
+  approvedAtBlock: Int
+  approvedAtTxHash: String
+  token: Token!
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type EpochOutstandingInvest {
+  id: ID! # tokenId-assetId
+  poolId: BigInt!
+  tokenId: String!
+  assetId: BigInt!
+  pendingAssetsAmount: BigInt
+  queuedAssetsAmount: BigInt
+  token: Token!
+  epochOutstandingInvestAsset: Asset
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type EpochOutstandingRedeem {
+  id: ID! # tokenId-assetId
+  poolId: BigInt!
+  tokenId: String!
+  assetId: BigInt!
+  pendingSharesAmount: BigInt
+  queuedSharesAmount: BigInt
+  token: Token!
+  epochOutstandingRedeemAsset: Asset
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+# --- Holding Entities --------------------------------------------------------
+
+type Holding {
+  id: ID! # tokenId-assetId
+  centrifugeId: String!
+  poolId: BigInt!
+  tokenId: String!
+  isInitialized: Boolean!
+  isLiability: Boolean
+  valuation: String
+  assetId: BigInt!
+  assetQuantity: BigInt
+  totalValue: BigInt
+  blockchain: Blockchain!
+  token: Token!
+  holdingEscrow: HoldingEscrow
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type HoldingAccount {
+  id: ID! # custom text id
+  tokenId: String!
+  kind: HoldingAccountType!
+  holding: Holding
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type Escrow {
+  id: ID! # address-centrifugeId
+  address: String!
+  poolId: BigInt!
+  centrifugeId: String!
+  blockchain: Blockchain!
+  # Derived relations
+  holdingEscrows: [HoldingEscrow!]! @derivedFrom(field: "escrow")
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type HoldingEscrow {
+  id: ID! # tokenId-assetId
+  centrifugeId: String!
+  poolId: BigInt!
+  tokenId: String!
+  assetId: BigInt!
+  assetAddress: String!
+  assetAmount: BigInt
+  assetPrice: BigInt
+  escrowAddress: String!
+  blockchain: Blockchain!
+  holding: Holding
+  asset: Asset
+  escrow: Escrow
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+# --- On/Off-Ramp Entities ----------------------------------------------------
+
+type OnOffRampManager {
+  id: ID! # address-centrifugeId
+  centrifugeId: String!
+  address: String!
+  poolId: BigInt!
+  tokenId: String!
+  pool: Pool
+  token: Token!
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type OfframpRelayer {
+  id: ID! # tokenId-centrifugeId-address
+  centrifugeId: String!
+  tokenId: String!
+  poolId: BigInt!
+  address: String!
+  isEnabled: Boolean!
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type OnRampAsset {
+  id: ID! # tokenId-centrifugeId-assetAddress
+  poolId: BigInt!
+  tokenId: String!
+  centrifugeId: String!
+  assetAddress: String!
+  isEnabled: Boolean!
+  token: Token!
+  onRampAssetRef: Asset
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type OffRampAddress {
+  id: ID! # tokenId-assetAddress-receiverAddress
+  poolId: BigInt!
+  tokenId: String!
+  centrifugeId: String!
+  assetAddress: String!
+  receiverAddress: String!
+  token: Token!
+  offRampAssetRef: Asset
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+# --- Asset Entities ----------------------------------------------------------
+
+type Asset {
+  id: ID! # assetId (bigint as string)
+  centrifugeId: String
+  address: String
+  assetTokenId: BigInt
+  decimals: Int!
+  name: String
+  symbol: String
+  blockchain: Blockchain
+  # Derived relations
+  assetRegistrations: [AssetRegistration!]! @derivedFrom(field: "asset")
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type AssetRegistration {
+  id: ID! # assetId-centrifugeId
+  assetId: BigInt!
+  centrifugeId: String!
+  blockchain: Blockchain!
+  asset: Asset!
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+# --- Pool Management Entities ------------------------------------------------
+
+type PoolManager {
+  id: ID! # address-centrifugeId-poolId
+  address: String!
+  centrifugeId: String!
+  poolId: BigInt!
+  isHubManager: Boolean!
+  isBalancesheetManager: Boolean!
+  pool: Pool!
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type Policy {
+  id: ID! # poolId-centrifugeId
+  poolId: BigInt!
+  centrifugeId: String!
+  strategistAddress: String!
+  root: String!
+  pool: Pool!
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+type MerkleProofManager {
+  id: ID! # address-centrifugeId
+  address: String!
+  centrifugeId: String!
+  poolId: BigInt!
+  pool: Pool!
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+# --- Crosschain Entities -----------------------------------------------------
+
+type CrosschainPayload {
+  id: ID! # payloadId-index
+  payloadId: String!
+  index: Int!
+  fromCentrifugeId: String!
+  toCentrifugeId: String!
+  rawData: String!
+  poolId: BigInt
+  status: CrosschainPayloadStatus!
+  deliveredAt: Int
+  deliveredAtBlock: Int
+  deliveredAtTxHash: String
+  completedAt: Int
+  completedAtBlock: Int
+  completedAtTxHash: String
+  preparedAt: Int!
+  preparedAtBlock: Int!
+  preparedAtTxHash: String!
+  fromBlockchain: Blockchain
+  toBlockchain: Blockchain
+  pool: Pool
+  # Derived relations
+  crosschainMessages: [CrosschainMessage!]! @derivedFrom(field: "crosschainPayload")
+  adapterParticipations: [AdapterParticipation!]! @derivedFrom(field: "payload")
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+}
+
+type CrosschainMessage {
+  id: ID! # messageId-index
+  messageId: String!
+  index: Int!
+  poolId: BigInt
+  payloadId: String
+  payloadIndex: Int
+  messageType: String!
+  status: CrosschainMessageStatus!
+  hash: String!
+  rawData: String!
+  data: String
+  failReason: String
+  fromCentrifugeId: String!
+  toCentrifugeId: String!
+  executedAt: Int
+  executedAtBlock: Int
+  executedAtTxHash: String
+  crosschainPayload: CrosschainPayload
+  pool: Pool
+  fromBlockchain: Blockchain
+  toBlockchain: Blockchain
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+}
+
+# --- Adapter Entities --------------------------------------------------------
+
+type Adapter {
+  id: ID! # address-centrifugeId
+  address: String!
+  centrifugeId: String!
+  name: String
+  # Derived relations
+  adapterWirings: [AdapterWiring!]! @derivedFrom(field: "fromAdapter")
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+}
+
+type AdapterWiring {
+  id: ID! # fromAddress-fromCentrifugeId-toAddress-toCentrifugeId
+  fromAddress: String!
+  fromCentrifugeId: String!
+  toAddress: String!
+  toCentrifugeId: String!
+  fromAdapter: Adapter
+  toAdapter: Adapter
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+}
+
+type AdapterParticipation {
+  id: ID! # payloadId-payloadIndex-adapterId-side-type
+  payloadId: String!
+  payloadIndex: Int!
+  adapterId: String!
+  centrifugeId: String!
+  fromCentrifugeId: String!
+  toCentrifugeId: String!
+  type: AdapterParticipationType!
+  side: AdapterParticipationSide!
+  timestamp: Int!
+  blockNumber: Int!
+  transactionHash: String!
+  payload: CrosschainPayload
+  adapter: Adapter
+  centrifugeBlockchain: Blockchain
+  fromBlockchain: Blockchain
+  toBlockchain: Blockchain
+}
+
+# --- Account Entity ----------------------------------------------------------
+
+type Account {
+  id: ID! # address
+  address: String!
+  createdAt: Int!
+  createdAtBlock: Int!
+  createdAtTxHash: String!
+  updatedAt: Int!
+  updatedAtBlock: Int!
+  updatedAtTxHash: String!
+}
+
+# --- Snapshot Entities -------------------------------------------------------
+
+type PoolSnapshot {
+  id: ID! # poolId-blockNumber-trigger
+  timestamp: Int!
+  blockNumber: Int!
+  trigger: String!
+  triggerTxHash: String
+  triggerChainId: String!
+  snapshotPoolId: BigInt!
+  currency: BigInt
+  pool: Pool
+}
+
+type TokenSnapshot {
+  id: ID! # tokenId-blockNumber-trigger
+  timestamp: Int!
+  blockNumber: Int!
+  trigger: String!
+  triggerTxHash: String
+  triggerChainId: String!
+  tokenId: String!
+  tokenPrice: BigInt
+  totalIssuance: BigInt
+  tokenPriceComputedAt: Int
+}
+
+type TokenInstanceSnapshot {
+  id: ID! # tokenId-blockNumber-trigger
+  timestamp: Int!
+  blockNumber: Int!
+  trigger: String!
+  triggerTxHash: String
+  triggerChainId: String!
+  tokenId: String!
+  centrifugeId: String!
+  tokenPrice: BigInt
+  totalIssuance: BigInt
+}
+
+type HoldingSnapshot {
+  id: ID! # tokenId-assetId-blockNumber-trigger
+  timestamp: Int!
+  blockNumber: Int!
+  trigger: String!
+  triggerTxHash: String
+  triggerChainId: String!
+  tokenId: String!
+  assetId: BigInt!
+  assetQuantity: BigInt
+  totalValue: BigInt
+}
+
+type HoldingEscrowSnapshot {
+  id: ID! # tokenId-assetId-blockNumber-trigger
+  timestamp: Int!
+  blockNumber: Int!
+  trigger: String!
+  triggerTxHash: String
+  triggerChainId: String!
+  tokenId: String!
+  assetId: BigInt!
+  assetAmount: BigInt
+  assetPrice: BigInt
+}

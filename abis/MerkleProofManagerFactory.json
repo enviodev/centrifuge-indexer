@@ -1,0 +1,87 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "contractUpdater_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "balanceSheet_",
+        "type": "address",
+        "internalType": "contract IBalanceSheet"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "balanceSheet",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IBalanceSheet"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "contractUpdater",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "newManager",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "uint64",
+        "internalType": "PoolId"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IMerkleProofManager"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "DeployMerkleProofManager",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "uint64",
+        "indexed": true,
+        "internalType": "PoolId"
+      },
+      {
+        "name": "manager",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "InvalidPoolId",
+    "inputs": []
+  }
+]

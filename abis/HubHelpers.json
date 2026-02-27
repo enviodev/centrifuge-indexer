@@ -1,0 +1,562 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "holdings_",
+        "type": "address",
+        "internalType": "contract IHoldings"
+      },
+      {
+        "name": "accounting_",
+        "type": "address",
+        "internalType": "contract IAccounting"
+      },
+      {
+        "name": "hubRegistry_",
+        "type": "address",
+        "internalType": "contract IHubRegistry"
+      },
+      {
+        "name": "sender_",
+        "type": "address",
+        "internalType": "contract IHubMessageSender"
+      },
+      {
+        "name": "shareClassManager_",
+        "type": "address",
+        "internalType": "contract IShareClassManager"
+      },
+      {
+        "name": "deployer",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "accounting",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IAccounting"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "deny",
+    "inputs": [
+      {
+        "name": "user",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "file",
+    "inputs": [
+      {
+        "name": "what",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "data",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "holdingAccounts",
+    "inputs": [
+      {
+        "name": "assetAccount",
+        "type": "uint32",
+        "internalType": "AccountId"
+      },
+      {
+        "name": "equityAccount",
+        "type": "uint32",
+        "internalType": "AccountId"
+      },
+      {
+        "name": "gainAccount",
+        "type": "uint32",
+        "internalType": "AccountId"
+      },
+      {
+        "name": "lossAccount",
+        "type": "uint32",
+        "internalType": "AccountId"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct HoldingAccount[]",
+        "components": [
+          {
+            "name": "accountId",
+            "type": "uint32",
+            "internalType": "AccountId"
+          },
+          {
+            "name": "kind",
+            "type": "uint8",
+            "internalType": "uint8"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "holdings",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IHoldings"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "hub",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IHub"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "hubRegistry",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IHubRegistry"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "liabilityAccounts",
+    "inputs": [
+      {
+        "name": "expenseAccount",
+        "type": "uint32",
+        "internalType": "AccountId"
+      },
+      {
+        "name": "liabilityAccount",
+        "type": "uint32",
+        "internalType": "AccountId"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct HoldingAccount[]",
+        "components": [
+          {
+            "name": "accountId",
+            "type": "uint32",
+            "internalType": "AccountId"
+          },
+          {
+            "name": "kind",
+            "type": "uint8",
+            "internalType": "uint8"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "notifyDeposit",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "uint64",
+        "internalType": "PoolId"
+      },
+      {
+        "name": "scId",
+        "type": "bytes16",
+        "internalType": "ShareClassId"
+      },
+      {
+        "name": "assetId",
+        "type": "uint128",
+        "internalType": "AssetId"
+      },
+      {
+        "name": "investor",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "maxClaims",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "totalPayoutShareAmount",
+        "type": "uint128",
+        "internalType": "uint128"
+      },
+      {
+        "name": "totalPaymentAssetAmount",
+        "type": "uint128",
+        "internalType": "uint128"
+      },
+      {
+        "name": "cancelledAssetAmount",
+        "type": "uint128",
+        "internalType": "uint128"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "notifyRedeem",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "uint64",
+        "internalType": "PoolId"
+      },
+      {
+        "name": "scId",
+        "type": "bytes16",
+        "internalType": "ShareClassId"
+      },
+      {
+        "name": "assetId",
+        "type": "uint128",
+        "internalType": "AssetId"
+      },
+      {
+        "name": "investor",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "maxClaims",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "totalPayoutAssetAmount",
+        "type": "uint128",
+        "internalType": "uint128"
+      },
+      {
+        "name": "totalPaymentShareAmount",
+        "type": "uint128",
+        "internalType": "uint128"
+      },
+      {
+        "name": "cancelledShareAmount",
+        "type": "uint128",
+        "internalType": "uint128"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "pricePoolPerAsset",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "uint64",
+        "internalType": "PoolId"
+      },
+      {
+        "name": "scId",
+        "type": "bytes16",
+        "internalType": "ShareClassId"
+      },
+      {
+        "name": "assetId",
+        "type": "uint128",
+        "internalType": "AssetId"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint128",
+        "internalType": "D18"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "rely",
+    "inputs": [
+      {
+        "name": "user",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "request",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "uint64",
+        "internalType": "PoolId"
+      },
+      {
+        "name": "scId",
+        "type": "bytes16",
+        "internalType": "ShareClassId"
+      },
+      {
+        "name": "assetId",
+        "type": "uint128",
+        "internalType": "AssetId"
+      },
+      {
+        "name": "payload",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "sender",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IHubMessageSender"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "shareClassManager",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IShareClassManager"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "updateAccountingAmount",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "uint64",
+        "internalType": "PoolId"
+      },
+      {
+        "name": "scId",
+        "type": "bytes16",
+        "internalType": "ShareClassId"
+      },
+      {
+        "name": "assetId",
+        "type": "uint128",
+        "internalType": "AssetId"
+      },
+      {
+        "name": "isPositive",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "diff",
+        "type": "uint128",
+        "internalType": "uint128"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "updateAccountingValue",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "uint64",
+        "internalType": "PoolId"
+      },
+      {
+        "name": "scId",
+        "type": "bytes16",
+        "internalType": "ShareClassId"
+      },
+      {
+        "name": "assetId",
+        "type": "uint128",
+        "internalType": "AssetId"
+      },
+      {
+        "name": "isPositive",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "diff",
+        "type": "uint128",
+        "internalType": "uint128"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "wards",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "Deny",
+    "inputs": [
+      {
+        "name": "user",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "File",
+    "inputs": [
+      {
+        "name": "what",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "addr",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Rely",
+    "inputs": [
+      {
+        "name": "user",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "FileUnrecognizedParam",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MulDiv_Overflow",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotAuthorized",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SliceOutOfBounds",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "Uint128_Overflow",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UnknownRequestType",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UnknownRequestType",
+    "inputs": []
+  }
+]

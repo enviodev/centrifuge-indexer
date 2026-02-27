@@ -1,0 +1,402 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "safe_",
+        "type": "address",
+        "internalType": "contract ISafe"
+      },
+      {
+        "name": "multiAdapter_",
+        "type": "address",
+        "internalType": "contract IMultiAdapter"
+      },
+      {
+        "name": "root_",
+        "type": "address",
+        "internalType": "contract IRoot"
+      },
+      {
+        "name": "messageDispatcher_",
+        "type": "address",
+        "internalType": "contract IRootMessageSender"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "cancelRely",
+    "inputs": [
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "cancelUpgrade",
+    "inputs": [
+      {
+        "name": "centrifugeId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "createPool",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "uint64",
+        "internalType": "PoolId"
+      },
+      {
+        "name": "admin",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "currency",
+        "type": "uint128",
+        "internalType": "AssetId"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "disputeRecovery",
+    "inputs": [
+      {
+        "name": "centrifugeId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "adapter",
+        "type": "address",
+        "internalType": "contract IAdapter"
+      },
+      {
+        "name": "hash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "file",
+    "inputs": [
+      {
+        "name": "what",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "data",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "hub",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IHubGuardianActions"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "initiateRecovery",
+    "inputs": [
+      {
+        "name": "centrifugeId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "adapter",
+        "type": "address",
+        "internalType": "contract IAdapter"
+      },
+      {
+        "name": "hash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "multiAdapter",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IMultiAdapter"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pause",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "recoverTokens",
+    "inputs": [
+      {
+        "name": "centrifugeId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "root",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IRoot"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "safe",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract ISafe"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "scheduleRely",
+    "inputs": [
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "scheduleUpgrade",
+    "inputs": [
+      {
+        "name": "centrifugeId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "sender",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IRootMessageSender"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "unpause",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "wireAdapters",
+    "inputs": [
+      {
+        "name": "centrifugeId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "adapters",
+        "type": "address[]",
+        "internalType": "contract IAdapter[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "wireAxelarAdapter",
+    "inputs": [
+      {
+        "name": "localAdapter",
+        "type": "address",
+        "internalType": "contract IAxelarAdapter"
+      },
+      {
+        "name": "centrifugeId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "axelarId",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "adapter",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "wireWormholeAdapter",
+    "inputs": [
+      {
+        "name": "localAdapter",
+        "type": "address",
+        "internalType": "contract IWormholeAdapter"
+      },
+      {
+        "name": "centrifugeId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "wormholeId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "adapter",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "File",
+    "inputs": [
+      {
+        "name": "what",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "addr",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "FileUnrecognizedParam",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotTheAuthorizedSafe",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotTheAuthorizedSafeOrItsOwner",
+    "inputs": []
+  }
+]
