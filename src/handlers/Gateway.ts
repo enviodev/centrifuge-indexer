@@ -155,6 +155,8 @@ Gateway.UnderpaidBatch.handler(async ({ event, context }) => {
     rawData: batchHex,
     poolId: batchPoolId,
     status: "Underpaid",
+    gasLimit: undefined,
+    gasPaid: undefined,
     deliveredAt: undefined,
     deliveredAtBlock: undefined,
     deliveredAtTxHash: undefined,

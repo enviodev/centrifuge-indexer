@@ -1,4 +1,4 @@
-import { MultiAdapter } from "generated";
+import { MultiAdapter, MultiAdapterV3_1 } from "generated";
 import { getCentrifugeId, ADAPTER_ADDRESSES } from "../utils/chains";
 import { createdDefaults } from "../utils/defaults";
 import {
@@ -52,9 +52,14 @@ async function ensureAdapter(
   });
 }
 
-// --- SendPayload ---
+// --- SendPayload (shared logic) ---
 
-MultiAdapter.SendPayload.handler(async ({ event, context }) => {
+async function handleSendPayload(
+  event: any,
+  context: any,
+  gasLimit?: bigint | null,
+  gasPaid?: bigint | null,
+) {
   const {
     centrifugeId: toCentrifugeIdNum,
     payload: payloadData,
@@ -111,6 +116,8 @@ MultiAdapter.SendPayload.handler(async ({ event, context }) => {
       rawData: payloadHex,
       poolId: payloadPoolId,
       status: "InTransit",
+      gasLimit: gasLimit ?? undefined,
+      gasPaid: gasPaid ?? undefined,
       deliveredAt: undefined,
       deliveredAtBlock: undefined,
       deliveredAtTxHash: undefined,
@@ -152,11 +159,13 @@ MultiAdapter.SendPayload.handler(async ({ event, context }) => {
       }
     }
 
-    // Update payload with sender-side data (rawData, preparedAt, poolId)
+    // Update payload with sender-side data (rawData, preparedAt, poolId, gas info)
     context.CrosschainPayload.set({
       ...payload,
       rawData: payloadHex,
       poolId: payloadPoolId,
+      gasLimit: gasLimit ?? payload.gasLimit,
+      gasPaid: gasPaid ?? payload.gasPaid,
       preparedAt: event.block.timestamp,
       preparedAtBlock: event.block.number,
       preparedAtTxHash: event.transaction.hash,
@@ -190,6 +199,16 @@ MultiAdapter.SendPayload.handler(async ({ event, context }) => {
     fromBlockchain_id: blockchainId(fromCentrifugeId),
     toBlockchain_id: blockchainId(toCentrifugeId),
   });
+}
+
+MultiAdapter.SendPayload.handler(async ({ event, context }) => {
+  await handleSendPayload(event, context);
+});
+
+MultiAdapterV3_1.SendPayloadV3_1.handler(async ({ event, context }) => {
+  const gasLimit = event.params.gasLimit;
+  const gasPaid = event.params.gasPaid;
+  await handleSendPayload(event, context, gasLimit, gasPaid);
 });
 
 // --- SendProof ---
@@ -233,10 +252,9 @@ MultiAdapter.SendProof.handler(async ({ event, context }) => {
   });
 });
 
-// --- HandlePayload ---
+// --- HandlePayload (shared logic) ---
 
-MultiAdapter.HandlePayload.handler(async ({ event, context }) => {
-  // RECEIVING CHAIN
+async function handleHandlePayload(event: any, context: any) {
   const { payloadId: payloadIdHex, payload: payloadBytes, adapter, centrifugeId: fromCentrifugeIdNum } = event.params;
   const fromCentrifugeId = fromCentrifugeIdNum.toString();
   const toCentrifugeId = getCentrifugeId(event.chainId);
@@ -265,6 +283,8 @@ MultiAdapter.HandlePayload.handler(async ({ event, context }) => {
       rawData: payloadHex,
       poolId: undefined,
       status: "Delivered",
+      gasLimit: undefined,
+      gasPaid: undefined,
       deliveredAt: event.block.timestamp,
       deliveredAtBlock: event.block.number,
       deliveredAtTxHash: event.transaction.hash,
@@ -341,6 +361,14 @@ MultiAdapter.HandlePayload.handler(async ({ event, context }) => {
       }
     }
   }
+}
+
+MultiAdapter.HandlePayload.handler(async ({ event, context }) => {
+  await handleHandlePayload(event, context);
+});
+
+MultiAdapterV3_1.HandlePayloadV3_1.handler(async ({ event, context }) => {
+  await handleHandlePayload(event, context);
 });
 
 // --- HandleProof ---
@@ -372,6 +400,8 @@ MultiAdapter.HandleProof.handler(async ({ event, context }) => {
       rawData: "0x", // No payload bytes in HandleProof — will be enriched by SendPayload
       poolId: undefined,
       status: "Delivered",
+      gasLimit: undefined,
+      gasPaid: undefined,
       deliveredAt: event.block.timestamp,
       deliveredAtBlock: event.block.number,
       deliveredAtTxHash: event.transaction.hash,

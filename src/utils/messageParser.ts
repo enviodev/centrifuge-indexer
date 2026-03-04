@@ -75,21 +75,21 @@ const V3_1_MESSAGE_TYPES = {
   NotifyPricePoolPerAsset: 65,
   NotifyShareMetadata: 185,
   UpdateShareHook: 57,
-  InitiateTransferShares: 91,
-  ExecuteTransferShares: 73,
-  UpdateRestriction: dynamicLengthDecoder(25),
-  UpdateVault: 74,
+  InitiateTransferShares: 107,
+  ExecuteTransferShares: 89,
+  UpdateRestriction: dynamicLengthDecoder(41),
+  UpdateVault: 90,
   UpdateBalanceSheetManager: 42,
   UpdateGatewayManager: 42,
-  UpdateHoldingAmount: 91,
-  UpdateShares: 59,
+  UpdateHoldingAmount: 107,
+  UpdateShares: 75,
   SetMaxAssetPriceAge: 49,
   SetMaxSharePriceAge: 33,
-  Request: dynamicLengthDecoder(41),
-  RequestCallback: dynamicLengthDecoder(41),
-  SetRequestManager: 73,
-  TrustedContractUpdate: dynamicLengthDecoder(57),
-  UntrustedContractUpdate: dynamicLengthDecoder(89),
+  Request: dynamicLengthDecoder(57),
+  RequestCallback: dynamicLengthDecoder(57),
+  SetRequestManager: 41,
+  TrustedContractUpdate: dynamicLengthDecoder(73),
+  UntrustedContractUpdate: dynamicLengthDecoder(105),
 } as const;
 
 const MESSAGE_TYPE_VERSIONS = [V3_MESSAGE_TYPES, V3_1_MESSAGE_TYPES] as const;
@@ -98,8 +98,20 @@ const MESSAGE_TYPE_VERSIONS = [V3_MESSAGE_TYPES, V3_1_MESSAGE_TYPES] as const;
 // Map of (chainId, contractAddress) → versionIndex
 // Default is V3 (index 0) for all current deployments
 const VERSION_OVERRIDES: Record<string, number> = {
-  // Add V3_1 overrides here when V3_1 contracts are deployed
-  // e.g., "1-0xNewGatewayAddress": 1,
+  // V3.1 MultiAdapter addresses (all chains use same address)
+  "1-0x35c837f0a54b715a23d193e1476bfc9bc30073be": 1,
+  "56-0x35c837f0a54b715a23d193e1476bfc9bc30073be": 1,
+  "8453-0x35c837f0a54b715a23d193e1476bfc9bc30073be": 1,
+  "42161-0x35c837f0a54b715a23d193e1476bfc9bc30073be": 1,
+  "43114-0x35c837f0a54b715a23d193e1476bfc9bc30073be": 1,
+  "98866-0x35c837f0a54b715a23d193e1476bfc9bc30073be": 1,
+  // V3.1 Gateway addresses (all chains use same address)
+  "1-0x19a524d03aa94ecee41a80341537bcfcb47d3172": 1,
+  "56-0x19a524d03aa94ecee41a80341537bcfcb47d3172": 1,
+  "8453-0x19a524d03aa94ecee41a80341537bcfcb47d3172": 1,
+  "42161-0x19a524d03aa94ecee41a80341537bcfcb47d3172": 1,
+  "43114-0x19a524d03aa94ecee41a80341537bcfcb47d3172": 1,
+  "98866-0x19a524d03aa94ecee41a80341537bcfcb47d3172": 1,
 };
 
 /** Get version index (0=V3, 1=V3_1) for a contract on a given chain */

@@ -802,6 +802,8 @@ type CrosschainPayload {
   rawData: String!
   poolId: BigInt
   status: CrosschainPayloadStatus!
+  gasLimit: BigInt
+  gasPaid: BigInt
   deliveredAt: Int
   deliveredAtBlock: Int
   deliveredAtTxHash: String
