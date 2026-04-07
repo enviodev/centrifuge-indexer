@@ -18,7 +18,7 @@ const LIABILITY_TYPES: Record<number, "Expense" | "Liability"> = {
   1: "Liability",
 };
 
-Holdings.Initialize.handler(async ({ event, context }) => {
+const _handleInitialize = async ({ event, context }: any) => {
   // _0 is the unnamed poolId param
   const { _0: poolId, scId: _rawScId, assetId, valuation: valuationRaw, isLiability, accounts } = event.params;
   const tokenId = normalizeScId(_rawScId);
@@ -64,9 +64,10 @@ Holdings.Initialize.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+};
+Holdings.Initialize.handler(_handleInitialize);
 
-Holdings.Increase.handler(async ({ event, context }) => {
+const _handleIncrease = async ({ event, context }: any) => {
   const { _0: poolId, scId: _rawScId, assetId, amount, increasedValue } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -99,9 +100,10 @@ Holdings.Increase.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+};
+Holdings.Increase.handler(_handleIncrease);
 
-Holdings.Decrease.handler(async ({ event, context }) => {
+const _handleDecrease = async ({ event, context }: any) => {
   const { _0: poolId, scId: _rawScId, assetId, amount, decreasedValue } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -136,9 +138,10 @@ Holdings.Decrease.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+};
+Holdings.Decrease.handler(_handleDecrease);
 
-Holdings.Update.handler(async ({ event, context }) => {
+const _handleUpdate = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, assetId, isPositive, diffValue } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -172,9 +175,10 @@ Holdings.Update.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+};
+Holdings.Update.handler(_handleUpdate);
 
-Holdings.UpdateValuation.handler(async ({ event, context }) => {
+const _handleUpdateValuation = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, assetId, valuation } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -206,9 +210,10 @@ Holdings.UpdateValuation.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+};
+Holdings.UpdateValuation.handler(_handleUpdateValuation);
 
-Holdings.UpdateIsLiability.handler(async ({ event, context }) => {
+const _handleUpdateIsLiability = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, assetId, isLiability } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -240,9 +245,10 @@ Holdings.UpdateIsLiability.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+};
+Holdings.UpdateIsLiability.handler(_handleUpdateIsLiability);
 
-Holdings.SetAccountId.handler(async ({ event, context }) => {
+const _handleSetAccountId = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, assetId, kind, accountId: newAccountId } = event.params;
   const tokenId = normalizeScId(_rawScId);
 
@@ -264,14 +270,15 @@ Holdings.SetAccountId.handler(async ({ event, context }) => {
     holding_id: hId,
     ...createdDefaults(event),
   });
-});
+};
+Holdings.SetAccountId.handler(_handleSetAccountId);
 
 // === V3.1 Handler Registrations (delegates to V3 logic) ===
 
-HoldingsV3_1.V3_1Initialize.handler(Holdings.Initialize.handler as any);
-HoldingsV3_1.V3_1Increase.handler(Holdings.Increase.handler as any);
-HoldingsV3_1.V3_1Decrease.handler(Holdings.Decrease.handler as any);
-HoldingsV3_1.V3_1Update.handler(Holdings.Update.handler as any);
-HoldingsV3_1.V3_1UpdateValuation.handler(Holdings.UpdateValuation.handler as any);
-HoldingsV3_1.V3_1UpdateIsLiability.handler(Holdings.UpdateIsLiability.handler as any);
-HoldingsV3_1.V3_1SetAccountId.handler(Holdings.SetAccountId.handler as any);
+HoldingsV3_1.V3_1Initialize.handler(_handleInitialize);
+HoldingsV3_1.V3_1Increase.handler(_handleIncrease);
+HoldingsV3_1.V3_1Decrease.handler(_handleDecrease);
+HoldingsV3_1.V3_1Update.handler(_handleUpdate);
+HoldingsV3_1.V3_1UpdateValuation.handler(_handleUpdateValuation);
+HoldingsV3_1.V3_1UpdateIsLiability.handler(_handleUpdateIsLiability);
+HoldingsV3_1.V3_1SetAccountId.handler(_handleSetAccountId);

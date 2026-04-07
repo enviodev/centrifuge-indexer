@@ -9,7 +9,7 @@ import { initV2WhitelistedInvestors } from "../utils/v2-setup";
 
 const ipfsHashRegex = /^(Qm[1-9A-HJ-NP-Za-km-z]{44}|b[A-Za-z2-7]{58})$/;
 
-HubRegistry.NewPool.handler(async ({ event, context }) => {
+const _handleNewPool = async ({ event, context }: any) => {
   const { poolId, currency, manager } = event.params;
   const centrifugeId = getCentrifugeId(event.chainId);
   const chainIdStr = event.chainId.toString();
@@ -84,9 +84,10 @@ HubRegistry.NewPool.handler(async ({ event, context }) => {
 
   // Initialize V2 whitelisted investors if this is a known V2 pool
   await initV2WhitelistedInvestors(context, poolId);
-});
+};
+HubRegistry.NewPool.handler(_handleNewPool);
 
-HubRegistry.NewAsset.handler(async ({ event, context }) => {
+const _handleNewAsset = async ({ event, context }: any) => {
   const { assetId, decimals } = event.params;
   const centrifugeId = getCentrifugeId(event.chainId);
 
@@ -128,9 +129,10 @@ HubRegistry.NewAsset.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+};
+HubRegistry.NewAsset.handler(_handleNewAsset);
 
-HubRegistry.UpdateCurrency.handler(async ({ event, context }) => {
+const _handleUpdateCurrency = async ({ event, context }: any) => {
   const { poolId, currency } = event.params;
 
   const pool = await context.Pool.get(poolId.toString());
@@ -144,9 +146,10 @@ HubRegistry.UpdateCurrency.handler(async ({ event, context }) => {
     currency,
     ...updatedDefaults(event),
   });
-});
+};
+HubRegistry.UpdateCurrency.handler(_handleUpdateCurrency);
 
-HubRegistry.UpdateManager.handler(async ({ event, context }) => {
+const _handleUpdateManager = async ({ event, context }: any) => {
   const { poolId, manager, canManage } = event.params;
   const centrifugeId = getCentrifugeId(event.chainId);
   const managerAddress = manager.toLowerCase();
@@ -180,9 +183,10 @@ HubRegistry.UpdateManager.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+};
+HubRegistry.UpdateManager.handler(_handleUpdateManager);
 
-HubRegistry.SetMetadata.handler(async ({ event, context }) => {
+const _handleSetMetadata = async ({ event, context }: any) => {
   const { poolId, metadata: rawMetadata } = event.params;
 
   const pool = await context.Pool.get(poolId.toString());
@@ -216,12 +220,13 @@ HubRegistry.SetMetadata.handler(async ({ event, context }) => {
     name,
     ...updatedDefaults(event),
   });
-});
+};
+HubRegistry.SetMetadata.handler(_handleSetMetadata);
 
 // === V3.1 Handler Registrations (delegates to V3 logic) ===
 
-HubRegistryV3_1.V3_1NewPool.handler(HubRegistry.NewPool.handler as any);
-HubRegistryV3_1.V3_1NewAsset.handler(HubRegistry.NewAsset.handler as any);
-HubRegistryV3_1.V3_1UpdateCurrency.handler(HubRegistry.UpdateCurrency.handler as any);
-HubRegistryV3_1.V3_1UpdateManager.handler(HubRegistry.UpdateManager.handler as any);
-HubRegistryV3_1.V3_1SetMetadata.handler(HubRegistry.SetMetadata.handler as any);
+HubRegistryV3_1.V3_1NewPool.handler(_handleNewPool);
+HubRegistryV3_1.V3_1NewAsset.handler(_handleNewAsset);
+HubRegistryV3_1.V3_1UpdateCurrency.handler(_handleUpdateCurrency);
+HubRegistryV3_1.V3_1UpdateManager.handler(_handleUpdateManager);
+HubRegistryV3_1.V3_1SetMetadata.handler(_handleSetMetadata);

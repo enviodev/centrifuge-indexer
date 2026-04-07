@@ -15,23 +15,26 @@ import { getInitialHolders } from "../utils/constants";
 import { deployVault, linkVault, unlinkVault } from "./shared/vaultOps";
 
 // --- contractRegister for AddShareClass (registers TokenInstance ERC20) ---
-Spoke.AddShareClass.contractRegister(({ event, context }) => {
+const _crAddShareClass = ({ event, context }: any) => {
   context.addTokenInstance(event.params.token);
-});
+};
+Spoke.AddShareClass.contractRegister(_crAddShareClass);
 
 // --- contractRegister for DeployVault (registers Vault contract) ---
-Spoke.DeployVault.contractRegister(({ event, context }) => {
+const _crDeployVault = ({ event, context }: any) => {
   context.addVault(event.params.vault);
-});
+};
+Spoke.DeployVault.contractRegister(_crDeployVault);
 
 // --- Handlers ---
 
-Spoke.AddPool.handler(async ({ event, context }) => {
+const _handleAddPool = async ({ event, context }: any) => {
   // Pool creation is tracked via HubRegistry.NewPool on the hub side.
   // Spoke.AddPool confirms the spoke received the notification — no entity tracking needed.
-});
+};
+Spoke.AddPool.handler(_handleAddPool);
 
-Spoke.RegisterAsset.handler(async ({ event, context }) => {
+const _handleRegisterAsset = async ({ event, context }: any) => {
   const { assetId, asset: assetAddress, tokenId: assetTokenId, name, symbol, decimals } = event.params;
   const centrifugeId = getCentrifugeId(event.chainId);
   const chainIdStr = event.chainId.toString();
@@ -61,9 +64,10 @@ Spoke.RegisterAsset.handler(async ({ event, context }) => {
     blockchain_id: blockchainId(centrifugeId),
     ...(existingAsset ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
   });
-});
+};
+Spoke.RegisterAsset.handler(_handleRegisterAsset);
 
-Spoke.AddShareClass.handler(async ({ event, context }) => {
+const _handleAddShareClass = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, token: tokenAddress } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -138,13 +142,15 @@ Spoke.AddShareClass.handler(async ({ event, context }) => {
       });
     }
   }
-});
+};
+Spoke.AddShareClass.handler(_handleAddShareClass);
 
-Spoke.DeployVault.handler(async ({ event, context }) => {
+const _handleDeployVault = async ({ event, context }: any) => {
   await deployVault(event, context);
-});
+};
+Spoke.DeployVault.handler(_handleDeployVault);
 
-Spoke.UpdateSharePrice.handler(async ({ event, context }) => {
+const _handleUpdateSharePrice = async ({ event, context }: any) => {
   const { scId: _rawScId, price: tokenPrice, computedAt: _computedAt } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -165,9 +171,10 @@ Spoke.UpdateSharePrice.handler(async ({ event, context }) => {
     crosschainInProgress: undefined,
     ...updatedDefaults(event),
   });
-});
+};
+Spoke.UpdateSharePrice.handler(_handleUpdateSharePrice);
 
-Spoke.UpdateAssetPrice.handler(async ({ event, context }) => {
+const _handleUpdateAssetPrice = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, asset: assetAddress, price: assetPrice } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -210,17 +217,20 @@ Spoke.UpdateAssetPrice.handler(async ({ event, context }) => {
     escrow_id: existingHe?.escrow_id ?? escrow.id,
     ...(existingHe ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
   });
-});
+};
+Spoke.UpdateAssetPrice.handler(_handleUpdateAssetPrice);
 
-Spoke.LinkVault.handler(async ({ event, context }) => {
+const _handleLinkVault = async ({ event, context }: any) => {
   await linkVault(event, context);
-});
+};
+Spoke.LinkVault.handler(_handleLinkVault);
 
-Spoke.UnlinkVault.handler(async ({ event, context }) => {
+const _handleUnlinkVault = async ({ event, context }: any) => {
   await unlinkVault(event, context);
-});
+};
+Spoke.UnlinkVault.handler(_handleUnlinkVault);
 
-Spoke.InitiateTransferShares.handler(async ({ event, context }) => {
+const _handleInitiateTransferShares = async ({ event, context }: any) => {
   const { centrifugeId: toCentrifugeIdRaw, poolId, scId: _rawScId, sender, destinationAddress, amount } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const fromCentrifugeId = getCentrifugeId(event.chainId);
@@ -295,9 +305,10 @@ Spoke.InitiateTransferShares.handler(async ({ event, context }) => {
     currencyAsset_id: undefined,
     ...createdDefaults(event),
   });
-});
+};
+Spoke.InitiateTransferShares.handler(_handleInitiateTransferShares);
 
-Spoke.ExecuteTransferShares.handler(async ({ event, context }) => {
+const _handleExecuteTransferShares = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, receiver, amount } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -333,25 +344,27 @@ Spoke.ExecuteTransferShares.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+};
+Spoke.ExecuteTransferShares.handler(_handleExecuteTransferShares);
 
-Spoke.SetRequestManager.handler(async ({ event, context }) => {
+const _handleSetRequestManager = async ({ event, context }: any) => {
   // Informational: tracks which request manager is set for a pool/token/asset.
   // The BatchRequestManager contract handles the actual request events.
-});
+};
+Spoke.SetRequestManager.handler(_handleSetRequestManager);
 
 // === V3.1 Handler Registrations (delegates to V3 logic) ===
 
-SpokeV3_1.V3_1AddShareClass.contractRegister(Spoke.AddShareClass.contractRegister as any);
-SpokeV3_1.V3_1DeployVault.contractRegister(Spoke.DeployVault.contractRegister as any);
-SpokeV3_1.V3_1AddPool.handler(Spoke.AddPool.handler as any);
-SpokeV3_1.V3_1RegisterAsset.handler(Spoke.RegisterAsset.handler as any);
-SpokeV3_1.V3_1AddShareClass.handler(Spoke.AddShareClass.handler as any);
-SpokeV3_1.V3_1DeployVault.handler(Spoke.DeployVault.handler as any);
-SpokeV3_1.V3_1UpdateSharePrice.handler(Spoke.UpdateSharePrice.handler as any);
-SpokeV3_1.V3_1UpdateAssetPrice.handler(Spoke.UpdateAssetPrice.handler as any);
-SpokeV3_1.V3_1LinkVault.handler(Spoke.LinkVault.handler as any);
-SpokeV3_1.V3_1UnlinkVault.handler(Spoke.UnlinkVault.handler as any);
-SpokeV3_1.V3_1InitiateTransferShares.handler(Spoke.InitiateTransferShares.handler as any);
-SpokeV3_1.V3_1ExecuteTransferShares.handler(Spoke.ExecuteTransferShares.handler as any);
-SpokeV3_1.V3_1SetRequestManager.handler(Spoke.SetRequestManager.handler as any);
+SpokeV3_1.V3_1AddShareClass.contractRegister(_crAddShareClass);
+SpokeV3_1.V3_1DeployVault.contractRegister(_crDeployVault);
+SpokeV3_1.V3_1AddPool.handler(_handleAddPool);
+SpokeV3_1.V3_1RegisterAsset.handler(_handleRegisterAsset);
+SpokeV3_1.V3_1AddShareClass.handler(_handleAddShareClass);
+SpokeV3_1.V3_1DeployVault.handler(_handleDeployVault);
+SpokeV3_1.V3_1UpdateSharePrice.handler(_handleUpdateSharePrice);
+SpokeV3_1.V3_1UpdateAssetPrice.handler(_handleUpdateAssetPrice);
+SpokeV3_1.V3_1LinkVault.handler(_handleLinkVault);
+SpokeV3_1.V3_1UnlinkVault.handler(_handleUnlinkVault);
+SpokeV3_1.V3_1InitiateTransferShares.handler(_handleInitiateTransferShares);
+SpokeV3_1.V3_1ExecuteTransferShares.handler(_handleExecuteTransferShares);
+SpokeV3_1.V3_1SetRequestManager.handler(_handleSetRequestManager);

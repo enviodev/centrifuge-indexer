@@ -18,7 +18,7 @@ import {
 
 // --- PrepareMessage ---
 
-Gateway.PrepareMessage.handler(async ({ event, context }) => {
+const _handlePrepareMessage = async ({ event, context }: any) => {
   const { centrifugeId: toCentrifugeIdNum, poolId, message } = event.params;
   const toCentrifugeId = toCentrifugeIdNum.toString();
   const fromCentrifugeId = getCentrifugeId(event.chainId);
@@ -70,11 +70,12 @@ Gateway.PrepareMessage.handler(async ({ event, context }) => {
     toBlockchain_id: blockchainId(toCentrifugeId),
     ...createdDefaults(event),
   });
-});
+};
+Gateway.PrepareMessage.handler(_handlePrepareMessage);
 
 // --- UnderpaidBatch ---
 
-Gateway.UnderpaidBatch.handler(async ({ event, context }) => {
+const _handleUnderpaidBatch = async ({ event, context }: any) => {
   const { centrifugeId: toCentrifugeIdNum, batch } = event.params;
   const toCentrifugeId = toCentrifugeIdNum.toString();
   const fromCentrifugeId = getCentrifugeId(event.chainId);
@@ -171,11 +172,12 @@ Gateway.UnderpaidBatch.handler(async ({ event, context }) => {
     pool_id: batchPoolId ? batchPoolId.toString() : undefined,
     ...createdDefaults(event),
   });
-});
+};
+Gateway.UnderpaidBatch.handler(_handleUnderpaidBatch);
 
 // --- RepayBatch ---
 
-Gateway.RepayBatch.handler(async ({ event, context }) => {
+const _handleRepayBatch = async ({ event, context }: any) => {
   const { centrifugeId: toCentrifugeIdNum, batch } = event.params;
   const toCentrifugeId = toCentrifugeIdNum.toString();
   const fromCentrifugeId = getCentrifugeId(event.chainId);
@@ -207,11 +209,12 @@ Gateway.RepayBatch.handler(async ({ event, context }) => {
     ...underpaidPayload,
     status: "InTransit",
   });
-});
+};
+Gateway.RepayBatch.handler(_handleRepayBatch);
 
 // --- ExecuteMessage ---
 
-Gateway.ExecuteMessage.handler(async ({ event, context }) => {
+const _handleExecuteMessage = async ({ event, context }: any) => {
   // RECEIVING CHAIN
   const { centrifugeId: fromCentrifugeIdNum, message } = event.params;
   const fromCentrifugeId = fromCentrifugeIdNum.toString();
@@ -294,11 +297,12 @@ Gateway.ExecuteMessage.handler(async ({ event, context }) => {
       completedAtTxHash: event.transaction.hash,
     });
   }
-});
+};
+Gateway.ExecuteMessage.handler(_handleExecuteMessage);
 
 // --- FailMessage ---
 
-Gateway.FailMessage.handler(async ({ event, context }) => {
+const _handleFailMessage = async ({ event, context }: any) => {
   // RECEIVING CHAIN
   const { centrifugeId: fromCentrifugeIdNum, message, error } = event.params;
   const fromCentrifugeId = fromCentrifugeIdNum.toString();
@@ -370,12 +374,13 @@ Gateway.FailMessage.handler(async ({ event, context }) => {
     ...payload,
     status: "PartiallyFailed",
   });
-});
+};
+Gateway.FailMessage.handler(_handleFailMessage);
 
 // === V3.1 Handler Registrations (delegates to V3 logic) ===
 
-GatewayV3_1.V3_1PrepareMessage.handler(Gateway.PrepareMessage.handler as any);
-GatewayV3_1.V3_1ExecuteMessage.handler(Gateway.ExecuteMessage.handler as any);
-GatewayV3_1.V3_1FailMessage.handler(Gateway.FailMessage.handler as any);
-GatewayV3_1.V3_1UnderpaidBatch.handler(Gateway.UnderpaidBatch.handler as any);
-GatewayV3_1.V3_1RepayBatch.handler(Gateway.RepayBatch.handler as any);
+GatewayV3_1.V3_1PrepareMessage.handler(_handlePrepareMessage);
+GatewayV3_1.V3_1ExecuteMessage.handler(_handleExecuteMessage);
+GatewayV3_1.V3_1FailMessage.handler(_handleFailMessage);
+GatewayV3_1.V3_1UnderpaidBatch.handler(_handleUnderpaidBatch);
+GatewayV3_1.V3_1RepayBatch.handler(_handleRepayBatch);

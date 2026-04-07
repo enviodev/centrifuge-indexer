@@ -12,7 +12,7 @@ import {
   normalizeScId,
 } from "../utils/ids";
 
-BalanceSheet.NoteDeposit.handler(async ({ event, context }) => {
+const _handleNoteDeposit = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, asset: assetAddress, amount, pricePoolPerAsset } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -71,9 +71,10 @@ BalanceSheet.NoteDeposit.handler(async ({ event, context }) => {
     assetAmount: newAssetAmount,
     assetPrice: pricePoolPerAsset,
   });
-});
+};
+BalanceSheet.NoteDeposit.handler(_handleNoteDeposit);
 
-BalanceSheet.Withdraw.handler(async ({ event, context }) => {
+const _handleWithdraw = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, asset: assetAddress, amount, pricePoolPerAsset } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -133,9 +134,10 @@ BalanceSheet.Withdraw.handler(async ({ event, context }) => {
     assetAmount: newAssetAmount,
     assetPrice: pricePoolPerAsset,
   });
-});
+};
+BalanceSheet.Withdraw.handler(_handleWithdraw);
 
-BalanceSheet.UpdateManager.handler(async ({ event, context }) => {
+const _handleUpdateManager = async ({ event, context }: any) => {
   const { poolId, who: manager, canManage } = event.params;
   const centrifugeId = getCentrifugeId(event.chainId);
   const managerAddress = manager.toLowerCase();
@@ -171,11 +173,12 @@ BalanceSheet.UpdateManager.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+};
+BalanceSheet.UpdateManager.handler(_handleUpdateManager);
 
 // --- Deposit: Track balance sheet asset deposits (hub-side) ---
 
-BalanceSheet.Deposit.handler(async ({ event, context }) => {
+const _handleDeposit = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, asset: assetAddress, amount } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -213,11 +216,12 @@ BalanceSheet.Deposit.handler(async ({ event, context }) => {
     escrow_id: existing?.escrow_id ?? escrow.id,
     ...(existing ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
   });
-});
+};
+BalanceSheet.Deposit.handler(_handleDeposit);
 
 // --- Issue: Hub-side share issuance record ---
 
-BalanceSheet.Issue.handler(async ({ event, context }) => {
+const _handleIssue = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, to, pricePoolPerShare, shares } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -266,11 +270,12 @@ BalanceSheet.Issue.handler(async ({ event, context }) => {
     currencyAsset_id: undefined,
     ...createdDefaults(event),
   });
-});
+};
+BalanceSheet.Issue.handler(_handleIssue);
 
 // --- Revoke: Hub-side share revocation record ---
 
-BalanceSheet.Revoke.handler(async ({ event, context }) => {
+const _handleRevoke = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, from, pricePoolPerShare, shares } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -319,11 +324,12 @@ BalanceSheet.Revoke.handler(async ({ event, context }) => {
     currencyAsset_id: undefined,
     ...createdDefaults(event),
   });
-});
+};
+BalanceSheet.Revoke.handler(_handleRevoke);
 
 // --- TransferSharesFrom: Hub-side cross-chain share transfer ---
 
-BalanceSheet.TransferSharesFrom.handler(async ({ event, context }) => {
+const _handleTransferSharesFrom = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, from, to, amount } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -396,14 +402,15 @@ BalanceSheet.TransferSharesFrom.handler(async ({ event, context }) => {
     currencyAsset_id: undefined,
     ...createdDefaults(event),
   });
-});
+};
+BalanceSheet.TransferSharesFrom.handler(_handleTransferSharesFrom);
 
 // === V3.1 Handler Registrations (delegates to V3 logic) ===
 
-BalanceSheetV3_1.V3_1NoteDeposit.handler(BalanceSheet.NoteDeposit.handler as any);
-BalanceSheetV3_1.V3_1Withdraw.handler(BalanceSheet.Withdraw.handler as any);
-BalanceSheetV3_1.V3_1BSUpdateManager.handler(BalanceSheet.UpdateManager.handler as any);
-BalanceSheetV3_1.V3_1Deposit.handler(BalanceSheet.Deposit.handler as any);
-BalanceSheetV3_1.V3_1Issue.handler(BalanceSheet.Issue.handler as any);
-BalanceSheetV3_1.V3_1Revoke.handler(BalanceSheet.Revoke.handler as any);
-BalanceSheetV3_1.V3_1TransferSharesFrom.handler(BalanceSheet.TransferSharesFrom.handler as any);
+BalanceSheetV3_1.V3_1NoteDeposit.handler(_handleNoteDeposit);
+BalanceSheetV3_1.V3_1Withdraw.handler(_handleWithdraw);
+BalanceSheetV3_1.V3_1BSUpdateManager.handler(_handleUpdateManager);
+BalanceSheetV3_1.V3_1Deposit.handler(_handleDeposit);
+BalanceSheetV3_1.V3_1Issue.handler(_handleIssue);
+BalanceSheetV3_1.V3_1Revoke.handler(_handleRevoke);
+BalanceSheetV3_1.V3_1TransferSharesFrom.handler(_handleTransferSharesFrom);

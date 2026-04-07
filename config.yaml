@@ -1,884 +1,957 @@
-# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
 name: centrifuge-indexer
 description: Centrifuge Protocol Indexer
-
 field_selection:
   transaction_fields:
-    - "hash"
-
+  - hash
 contracts:
-  # ==========================================================================
-  # Singleton Contracts
-  # ==========================================================================
-
-  - name: HubRegistry
-    abi_file_path: abis/HubRegistry.json
-    handler: src/handlers/HubRegistry.ts
-    events:
-      - event: "NewPool(uint64 poolId, address indexed manager, uint128 indexed currency)"
-      - event: "NewAsset(uint128 indexed assetId, uint8 decimals)"
-      - event: "UpdateCurrency(uint64 indexed poolId, uint128 currency)"
-      - event: "UpdateManager(uint64 indexed poolId, address indexed manager, bool canManage)"
-      - event: "SetMetadata(uint64 indexed poolId, bytes metadata)"
-
-  - name: Hub
-    abi_file_path: abis/Hub.json
-    handler: src/handlers/Hub.ts
-    events:
-      - event: "NotifyPool(uint16 indexed centrifugeId, uint64 indexed poolId)"
-      - event: "NotifyShareClass(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId)"
-      - event: "NotifyShareMetadata(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, string name, string symbol)"
-      - event: "NotifySharePrice(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, uint128 poolPerShare)"
-      - event: "NotifyAssetPrice(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, uint128 assetId, uint128 pricePoolPerAsset)"
-      - event: "UpdateVault(uint64 indexed poolId, bytes16 scId, uint128 assetId, bytes32 vaultOrFactory, uint8 kind)"
-      - event: "UpdateRestriction(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, bytes payload)"
-      - event: "UpdateShareHook(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, bytes32 hook)"
-      - event: "ForwardTransferShares(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, bytes32 receiver, uint128 amount)"
-      - event: "UpdateContract(uint16 centrifugeId, uint64 poolId, bytes16 scId, bytes32 target, bytes payload)"
-
-  - name: Spoke
-    abi_file_path: abis/Spoke.json
-    handler: src/handlers/Spoke.ts
-    events:
-      - event: "AddPool(uint64 indexed poolId)"
-      - event: "AddShareClass(uint64 indexed poolId, bytes16 indexed scId, address token)"
-      - event: "DeployVault(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, address factory, address vault, uint8 kind)"
-      - event: "RegisterAsset(uint128 indexed assetId, address indexed asset, uint256 indexed tokenId, string name, string symbol, uint8 decimals, bool isInitialization)"
-      - event: "UpdateSharePrice(uint64 indexed poolId, bytes16 indexed scId, uint256 price, uint64 computedAt)"
-      - event: "UpdateAssetPrice(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, uint256 price, uint64 computedAt)"
-      - event: "LinkVault(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, address vault)"
-      - event: "UnlinkVault(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, address vault)"
-      - event: "InitiateTransferShares(uint16 centrifugeId, uint64 indexed poolId, bytes16 indexed scId, address indexed sender, bytes32 destinationAddress, uint128 amount)"
-      - event: "ExecuteTransferShares(uint64 indexed poolId, bytes16 indexed scId, address indexed receiver, uint128 amount)"
-      - event: "SetRequestManager(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, address manager)"
-
-  - name: Gateway
-    abi_file_path: abis/Gateway.json
-    handler: src/handlers/Gateway.ts
-    events:
-      - event: "PrepareMessage(uint16 indexed centrifugeId, uint64 poolId, bytes message)"
-      - event: "ExecuteMessage(uint16 indexed centrifugeId, bytes message)"
-      - event: "FailMessage(uint16 indexed centrifugeId, bytes message, bytes error)"
-      - event: "UnderpaidBatch(uint16 indexed centrifugeId, bytes batch)"
-      - event: "RepayBatch(uint16 indexed centrifugeId, bytes batch)"
-
-  - name: BalanceSheet
-    abi_file_path: abis/BalanceSheet.json
-    handler: src/handlers/BalanceSheet.ts
-    events:
-      - event: "Deposit(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256 tokenId, uint128 amount)"
-      - event: "Withdraw(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256 tokenId, address receiver, uint128 amount, uint128 pricePoolPerAsset)"
-      - event: "NoteDeposit(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256 tokenId, uint128 amount, uint128 pricePoolPerAsset)"
-      - event: "Issue(uint64 indexed poolId, bytes16 indexed scId, address to, uint128 pricePoolPerShare, uint128 shares)"
-      - event: "Revoke(uint64 indexed poolId, bytes16 indexed scId, address from, uint128 pricePoolPerShare, uint128 shares)"
-      - event: "UpdateManager(uint64 indexed poolId, address who, bool canManage)"
-      - event: "TransferSharesFrom(uint64 indexed poolId, bytes16 indexed scId, address sender, address indexed from, address to, uint256 amount)"
-
-  - name: Holdings
-    abi_file_path: abis/Holdings.json
-    handler: src/handlers/Holdings.ts
-    events:
-      - event: "Initialize(uint64 indexed, bytes16 scId, uint128 indexed assetId, address valuation, bool isLiability, (uint32,uint8)[] accounts)"
-        name: "Initialize"
-      - event: "Increase(uint64 indexed, bytes16 scId, uint128 indexed assetId, uint128 pricePoolPerAsset, uint128 amount, uint128 increasedValue)"
-        name: "Increase"
-      - event: "Decrease(uint64 indexed, bytes16 scId, uint128 indexed assetId, uint128 pricePoolPerAsset, uint128 amount, uint128 decreasedValue)"
-        name: "Decrease"
-      - event: "Update(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, bool isPositive, uint128 diffValue)"
-      - event: "UpdateValuation(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, address valuation)"
-      - event: "UpdateIsLiability(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, bool isLiability)"
-      - event: "SetAccountId(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, uint8 kind, uint32 accountId)"
-
-  - name: ShareClassManager
-    abi_file_path: abis/ShareClassManager.json
-    handler: src/handlers/ShareClassManager.ts
-    events:
-      - event: "AddShareClass(uint64 indexed poolId, bytes16 indexed scId, uint32 indexed index, string name, string symbol, bytes32 salt)"
-        name: "AddShareClassLong"
-      - event: "AddShareClass(uint64 indexed poolId, bytes16 indexed scId, uint32 indexed index)"
-        name: "AddShareClassShort"
-      - event: "UpdateMetadata(uint64 indexed poolId, bytes16 indexed scId, string name, string symbol)"
-      - event: "UpdateShareClass(uint64 indexed poolId, bytes16 indexed scId, uint128 navPoolPerShare)"
-      - event: "UpdatePricePoolPerShare(uint64 indexed poolId, bytes16 indexed scId, uint128 price, uint64 computedAt)"
-      - event: "UpdateDepositRequest(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed depositAssetId, uint32 epoch, bytes32 investor, uint128 pendingUserAssetAmount, uint128 pendingTotalAssetAmount, uint128 queuedUserAssetAmount, bool pendingCancellation)"
-      - event: "UpdateRedeemRequest(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed payoutAssetId, uint32 epoch, bytes32 investor, uint128 pendingUserShareAmount, uint128 pendingTotalShareAmount, uint128 queuedUserShareAmount, bool pendingCancellation)"
-      - event: "ApproveDeposits(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed depositAssetId, uint32 epoch, uint128 approvedPoolAmount, uint128 approvedAssetAmount, uint128 pendingAssetAmount)"
-      - event: "ApproveRedeems(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed payoutAssetId, uint32 epoch, uint128 approvedShareAmount, uint128 pendingShareAmount)"
-      - event: "IssueShares(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed depositAssetId, uint32 epoch, uint128 navPoolPerShare, uint128 navAssetPerShare, uint128 issuedShareAmount)"
-      - event: "RevokeShares(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed payoutAssetId, uint32 epoch, uint128 navPoolPerShare, uint128 navAssetPerShare, uint128 revokedShareAmount, uint128 revokedAssetAmount, uint128 revokedPoolAmount)"
-      - event: "ClaimDeposit(uint64 indexed poolId, bytes16 indexed scId, uint32 epoch, bytes32 investor, uint128 indexed depositAssetId, uint128 paymentAssetAmount, uint128 pendingAssetAmount, uint128 claimedShareAmount, uint64 issuedAt)"
-      - event: "ClaimRedeem(uint64 indexed poolId, bytes16 indexed scId, uint32 epoch, bytes32 investor, uint128 indexed payoutAssetId, uint128 paymentShareAmount, uint128 pendingShareAmount, uint128 claimedAssetAmount, uint64 revokedAt)"
-      - event: "RemoteIssueShares(uint16 centrifugeId, uint64 indexed poolId, bytes16 indexed scId, uint128 issuedShareAmount)"
-      - event: "RemoteRevokeShares(uint16 centrifugeId, uint64 indexed poolId, bytes16 indexed scId, uint128 revokedShareAmount)"
-
-  - name: MultiAdapter
-    abi_file_path: abis/MultiAdapter.json
-    handler: src/handlers/MultiAdapter.ts
-    events:
-      - event: "SendPayload(uint16 indexed centrifugeId, bytes32 indexed payloadId, bytes payload, address adapter, bytes32 adapterData, address refund)"
-      - event: "SendProof(uint16 indexed centrifugeId, bytes32 indexed payloadId, bytes32 payloadHash, address adapter, bytes32 adapterData)"
-      - event: "HandlePayload(uint16 indexed centrifugeId, bytes32 indexed payloadId, bytes payload, address adapter)"
-      - event: "HandleProof(uint16 indexed centrifugeId, bytes32 indexed payloadId, bytes32 payloadHash, address adapter)"
-      - event: "File(bytes32 indexed what, uint16 centrifugeId, address[] adapters)"
-        name: "FileAdapters"
-
-  - name: MultiAdapterV3_1
-    abi_file_path: abis/MultiAdapterV3_1.json
-    handler: src/handlers/MultiAdapter.ts
-    events:
-      - event: "SendPayload(uint16 indexed centrifugeId, bytes32 indexed payloadId, bytes payload, address adapter, bytes32 adapterData, uint256 gasLimit, uint256 gasPaid, address refund)"
-        name: "SendPayloadV3_1"
-      - event: "HandlePayload(uint16 indexed centrifugeId, bytes32 indexed payloadId, bytes payload, address adapter)"
-        name: "HandlePayloadV3_1"
-
-  - name: PoolEscrowFactory
-    abi_file_path: abis/PoolEscrowFactory.json
-    handler: src/handlers/PoolEscrowFactory.ts
-    events:
-      - event: "DeployPoolEscrow(uint64 indexed poolId, address indexed escrow)"
-
-  - name: MerkleProofManagerFactory
-    abi_file_path: abis/MerkleProofManagerFactory.json
-    handler: src/handlers/MerkleProofManager.ts
-    events:
-      - event: "DeployMerkleProofManager(uint64 indexed poolId, address indexed manager)"
-
-  - name: OnOfframpManagerFactory
-    abi_file_path: abis/OnOfframpManagerFactory.json
-    handler: src/handlers/OnOffRampManager.ts
-    events:
-      - event: "DeployOnOfframpManager(uint64 indexed poolId, bytes16 scId, address indexed manager)"
-
-  - name: BatchRequestManager
-    abi_file_path: abis/AsyncRequestManager.json
-    handler: src/handlers/BatchRequestManager.ts
-    events:
-      - event: "AddVault(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, address vault)"
-      - event: "RemoveVault(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, address vault)"
-      - event: "TriggerRedeemRequest(uint64 indexed poolId, bytes16 indexed scId, address user, address indexed asset, uint256 tokenId, uint128 shares)"
-
-  - name: SyncMgr
-    abi_file_path: abis/SyncManager.json
-    handler: src/handlers/SyncManager.ts
-    events:
-      - event: "SetMaxReserve(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256 tokenId, uint128 maxReserve)"
-
-  # ==========================================================================
-  # V3.1 Singleton Contracts (same events, different addresses on original chains)
-  # ==========================================================================
-
-  - name: HubRegistryV3_1
-    abi_file_path: abis/HubRegistry.json
-    handler: src/handlers/HubRegistry.ts
-    events:
-      - event: "NewPool(uint64 poolId, address indexed manager, uint128 indexed currency)"
-        name: "V3_1NewPool"
-      - event: "NewAsset(uint128 indexed assetId, uint8 decimals)"
-        name: "V3_1NewAsset"
-      - event: "UpdateCurrency(uint64 indexed poolId, uint128 currency)"
-        name: "V3_1UpdateCurrency"
-      - event: "UpdateManager(uint64 indexed poolId, address indexed manager, bool canManage)"
-        name: "V3_1UpdateManager"
-      - event: "SetMetadata(uint64 indexed poolId, bytes metadata)"
-        name: "V3_1SetMetadata"
-
-  - name: HubV3_1
-    abi_file_path: abis/Hub.json
-    handler: src/handlers/Hub.ts
-    events:
-      - event: "NotifyPool(uint16 indexed centrifugeId, uint64 indexed poolId)"
-        name: "V3_1NotifyPool"
-      - event: "NotifyShareClass(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId)"
-        name: "V3_1NotifyShareClass"
-      - event: "NotifyShareMetadata(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, string name, string symbol)"
-        name: "V3_1NotifyShareMetadata"
-      - event: "NotifySharePrice(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, uint128 poolPerShare)"
-        name: "V3_1NotifySharePrice"
-      - event: "NotifyAssetPrice(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, uint128 assetId, uint128 pricePoolPerAsset)"
-        name: "V3_1NotifyAssetPrice"
-      - event: "UpdateVault(uint64 indexed poolId, bytes16 scId, uint128 assetId, bytes32 vaultOrFactory, uint8 kind)"
-        name: "V3_1UpdateVault"
-      - event: "UpdateRestriction(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, bytes payload)"
-        name: "V3_1UpdateRestriction"
-      - event: "UpdateShareHook(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, bytes32 hook)"
-        name: "V3_1UpdateShareHook"
-      - event: "ForwardTransferShares(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, bytes32 receiver, uint128 amount)"
-        name: "V3_1ForwardTransferShares"
-      - event: "UpdateContract(uint16 centrifugeId, uint64 poolId, bytes16 scId, bytes32 target, bytes payload)"
-        name: "V3_1UpdateContract"
-
-  - name: SpokeV3_1
-    abi_file_path: abis/Spoke.json
-    handler: src/handlers/Spoke.ts
-    events:
-      - event: "AddPool(uint64 indexed poolId)"
-        name: "V3_1AddPool"
-      - event: "AddShareClass(uint64 indexed poolId, bytes16 indexed scId, address token)"
-        name: "V3_1AddShareClass"
-      - event: "DeployVault(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, address factory, address vault, uint8 kind)"
-        name: "V3_1DeployVault"
-      - event: "RegisterAsset(uint128 indexed assetId, address indexed asset, uint256 indexed tokenId, string name, string symbol, uint8 decimals, bool isInitialization)"
-        name: "V3_1RegisterAsset"
-      - event: "UpdateSharePrice(uint64 indexed poolId, bytes16 indexed scId, uint256 price, uint64 computedAt)"
-        name: "V3_1UpdateSharePrice"
-      - event: "UpdateAssetPrice(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, uint256 price, uint64 computedAt)"
-        name: "V3_1UpdateAssetPrice"
-      - event: "LinkVault(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, address vault)"
-        name: "V3_1LinkVault"
-      - event: "UnlinkVault(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, address vault)"
-        name: "V3_1UnlinkVault"
-      - event: "InitiateTransferShares(uint16 centrifugeId, uint64 indexed poolId, bytes16 indexed scId, address indexed sender, bytes32 destinationAddress, uint128 amount)"
-        name: "V3_1InitiateTransferShares"
-      - event: "ExecuteTransferShares(uint64 indexed poolId, bytes16 indexed scId, address indexed receiver, uint128 amount)"
-        name: "V3_1ExecuteTransferShares"
-      - event: "SetRequestManager(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, address manager)"
-        name: "V3_1SetRequestManager"
-
-  - name: GatewayV3_1
-    abi_file_path: abis/Gateway.json
-    handler: src/handlers/Gateway.ts
-    events:
-      - event: "PrepareMessage(uint16 indexed centrifugeId, uint64 poolId, bytes message)"
-        name: "V3_1PrepareMessage"
-      - event: "ExecuteMessage(uint16 indexed centrifugeId, bytes message)"
-        name: "V3_1ExecuteMessage"
-      - event: "FailMessage(uint16 indexed centrifugeId, bytes message, bytes error)"
-        name: "V3_1FailMessage"
-      - event: "UnderpaidBatch(uint16 indexed centrifugeId, bytes batch)"
-        name: "V3_1UnderpaidBatch"
-      - event: "RepayBatch(uint16 indexed centrifugeId, bytes batch)"
-        name: "V3_1RepayBatch"
-
-  - name: BalanceSheetV3_1
-    abi_file_path: abis/BalanceSheet.json
-    handler: src/handlers/BalanceSheet.ts
-    events:
-      - event: "Deposit(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256 tokenId, uint128 amount)"
-        name: "V3_1Deposit"
-      - event: "Withdraw(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256 tokenId, address receiver, uint128 amount, uint128 pricePoolPerAsset)"
-        name: "V3_1Withdraw"
-      - event: "NoteDeposit(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256 tokenId, uint128 amount, uint128 pricePoolPerAsset)"
-        name: "V3_1NoteDeposit"
-      - event: "Issue(uint64 indexed poolId, bytes16 indexed scId, address to, uint128 pricePoolPerShare, uint128 shares)"
-        name: "V3_1Issue"
-      - event: "Revoke(uint64 indexed poolId, bytes16 indexed scId, address from, uint128 pricePoolPerShare, uint128 shares)"
-        name: "V3_1Revoke"
-      - event: "UpdateManager(uint64 indexed poolId, address who, bool canManage)"
-        name: "V3_1BSUpdateManager"
-      - event: "TransferSharesFrom(uint64 indexed poolId, bytes16 indexed scId, address sender, address indexed from, address to, uint256 amount)"
-        name: "V3_1TransferSharesFrom"
-
-  - name: HoldingsV3_1
-    abi_file_path: abis/Holdings.json
-    handler: src/handlers/Holdings.ts
-    events:
-      - event: "Initialize(uint64 indexed, bytes16 scId, uint128 indexed assetId, address valuation, bool isLiability, (uint32,uint8)[] accounts)"
-        name: "V3_1Initialize"
-      - event: "Increase(uint64 indexed, bytes16 scId, uint128 indexed assetId, uint128 pricePoolPerAsset, uint128 amount, uint128 increasedValue)"
-        name: "V3_1Increase"
-      - event: "Decrease(uint64 indexed, bytes16 scId, uint128 indexed assetId, uint128 pricePoolPerAsset, uint128 amount, uint128 decreasedValue)"
-        name: "V3_1Decrease"
-      - event: "Update(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, bool isPositive, uint128 diffValue)"
-        name: "V3_1Update"
-      - event: "UpdateValuation(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, address valuation)"
-        name: "V3_1UpdateValuation"
-      - event: "UpdateIsLiability(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, bool isLiability)"
-        name: "V3_1UpdateIsLiability"
-      - event: "SetAccountId(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, uint8 kind, uint32 accountId)"
-        name: "V3_1SetAccountId"
-
-  - name: ShareClassManagerV3_1
-    abi_file_path: abis/ShareClassManager.json
-    handler: src/handlers/ShareClassManager.ts
-    events:
-      - event: "AddShareClass(uint64 indexed poolId, bytes16 indexed scId, uint32 indexed index, string name, string symbol, bytes32 salt)"
-        name: "V3_1AddShareClassLong"
-      - event: "AddShareClass(uint64 indexed poolId, bytes16 indexed scId, uint32 indexed index)"
-        name: "V3_1AddShareClassShort"
-      - event: "UpdateMetadata(uint64 indexed poolId, bytes16 indexed scId, string name, string symbol)"
-        name: "V3_1UpdateMetadata"
-      - event: "UpdateShareClass(uint64 indexed poolId, bytes16 indexed scId, uint128 navPoolPerShare)"
-        name: "V3_1UpdateShareClass"
-      - event: "UpdatePricePoolPerShare(uint64 indexed poolId, bytes16 indexed scId, uint128 price, uint64 computedAt)"
-        name: "V3_1UpdatePricePoolPerShare"
-      - event: "UpdateDepositRequest(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed depositAssetId, uint32 epoch, bytes32 investor, uint128 pendingUserAssetAmount, uint128 pendingTotalAssetAmount, uint128 queuedUserAssetAmount, bool pendingCancellation)"
-        name: "V3_1UpdateDepositRequest"
-      - event: "UpdateRedeemRequest(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed payoutAssetId, uint32 epoch, bytes32 investor, uint128 pendingUserShareAmount, uint128 pendingTotalShareAmount, uint128 queuedUserShareAmount, bool pendingCancellation)"
-        name: "V3_1UpdateRedeemRequest"
-      - event: "ApproveDeposits(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed depositAssetId, uint32 epoch, uint128 approvedPoolAmount, uint128 approvedAssetAmount, uint128 pendingAssetAmount)"
-        name: "V3_1ApproveDeposits"
-      - event: "ApproveRedeems(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed payoutAssetId, uint32 epoch, uint128 approvedShareAmount, uint128 pendingShareAmount)"
-        name: "V3_1ApproveRedeems"
-      - event: "IssueShares(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed depositAssetId, uint32 epoch, uint128 navPoolPerShare, uint128 navAssetPerShare, uint128 issuedShareAmount)"
-        name: "V3_1IssueShares"
-      - event: "RevokeShares(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed payoutAssetId, uint32 epoch, uint128 navPoolPerShare, uint128 navAssetPerShare, uint128 revokedShareAmount, uint128 revokedAssetAmount, uint128 revokedPoolAmount)"
-        name: "V3_1RevokeShares"
-      - event: "ClaimDeposit(uint64 indexed poolId, bytes16 indexed scId, uint32 epoch, bytes32 investor, uint128 indexed depositAssetId, uint128 paymentAssetAmount, uint128 pendingAssetAmount, uint128 claimedShareAmount, uint64 issuedAt)"
-        name: "V3_1ClaimDeposit"
-      - event: "ClaimRedeem(uint64 indexed poolId, bytes16 indexed scId, uint32 epoch, bytes32 investor, uint128 indexed payoutAssetId, uint128 paymentShareAmount, uint128 pendingShareAmount, uint128 claimedAssetAmount, uint64 revokedAt)"
-        name: "V3_1ClaimRedeem"
-      - event: "RemoteIssueShares(uint16 centrifugeId, uint64 indexed poolId, bytes16 indexed scId, uint128 issuedShareAmount)"
-        name: "V3_1RemoteIssueShares"
-      - event: "RemoteRevokeShares(uint16 centrifugeId, uint64 indexed poolId, bytes16 indexed scId, uint128 revokedShareAmount)"
-        name: "V3_1RemoteRevokeShares"
-
-  # ==========================================================================
-  # Factory-Deployed Contracts (dynamically registered via contractRegister)
-  # ==========================================================================
-
-  - name: Vault
-    abi_file_path: abis/AsyncVault.json
-    handler: src/handlers/Vault.ts
-    events:
-      - event: "DepositRequest(address indexed controller, address indexed owner, uint256 indexed requestId, address sender, uint256 assets)"
-      - event: "RedeemRequest(address indexed controller, address indexed owner, uint256 indexed requestId, address sender, uint256 shares)"
-      - event: "DepositClaimable(address indexed controller, uint256 indexed requestId, uint256 assets, uint256 shares)"
-      - event: "RedeemClaimable(address indexed controller, uint256 indexed requestId, uint256 assets, uint256 shares)"
-      - event: "Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)"
-      - event: "Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares)"
-      - event: "CancelDepositRequest(address indexed controller, uint256 indexed requestId, address sender)"
-      - event: "CancelDepositClaim(address indexed controller, address indexed receiver, uint256 indexed requestId, address sender, uint256 assets)"
-      - event: "CancelDepositClaimable(address indexed controller, uint256 indexed requestId, uint256 assets)"
-      - event: "CancelRedeemRequest(address indexed controller, uint256 indexed requestId, address sender)"
-      - event: "CancelRedeemClaim(address indexed controller, address indexed receiver, uint256 indexed requestId, address sender, uint256 shares)"
-      - event: "CancelRedeemClaimable(address indexed controller, uint256 indexed requestId, uint256 shares)"
-
-  - name: PoolEscrow
-    abi_file_path: abis/PoolEscrow.json
-    handler: src/handlers/PoolEscrowFactory.ts
-    events:
-      - event: "Deposit(address indexed asset, uint256 indexed tokenId, uint64 indexed poolId, bytes16 scId, uint128 value)"
-        name: "EscrowDeposit"
-      - event: "Withdraw(address indexed asset, uint256 indexed tokenId, uint64 indexed poolId, bytes16 scId, uint128 value)"
-        name: "EscrowWithdraw"
-
-  - name: OnOfframpManager
-    abi_file_path: abis/OnOfframpManager.json
-    handler: src/handlers/OnOffRampManager.ts
-    events:
-      - event: "UpdateRelayer(address indexed relayer, bool isEnabled)"
-      - event: "UpdateOnramp(address indexed asset, bool isEnabled)"
-      - event: "UpdateOfframp(address indexed asset, address receiver, bool isEnabled)"
-
-  - name: MerkleProofManager
-    abi_file_path: abis/MerkleProofManager.json
-    handler: src/handlers/MerkleProofManager.ts
-    events:
-      - event: "UpdatePolicy(address indexed strategist, bytes32 oldRoot, bytes32 newRoot)"
-
-  - name: TokenInstance
-    abi_file_path: abis/ERC20.json
-    handler: src/handlers/TokenInstance.ts
-    events:
-      - event: "Transfer(address indexed from, address indexed to, uint256 value)"
-
-  - name: VaultRegistry
-    abi_file_path: abis/Spoke.json
-    handler: src/handlers/VaultRegistry.ts
-    events:
-      - event: "DeployVault(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, address factory, address vault, uint8 kind)"
-        name: "VaultRegistryDeployVault"
-      - event: "LinkVault(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, address vault)"
-        name: "VaultRegistryLinkVault"
-      - event: "UnlinkVault(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, address vault)"
-        name: "VaultRegistryUnlinkVault"
-
-# =============================================================================
-# Chains — 6 mainnet chains from the Centrifuge registry
-# =============================================================================
-
+- name: HubRegistry
+  abi_file_path: abis/HubRegistry.json
+  handler: src/handlers/HubRegistry.ts
+  events:
+  - event: NewPool(uint64 poolId, address indexed manager, uint128 indexed currency)
+  - event: NewAsset(uint128 indexed assetId, uint8 decimals)
+  - event: UpdateCurrency(uint64 indexed poolId, uint128 currency)
+  - event: UpdateManager(uint64 indexed poolId, address indexed manager, bool canManage)
+  - event: SetMetadata(uint64 indexed poolId, bytes metadata)
+- name: Hub
+  abi_file_path: abis/Hub.json
+  handler: src/handlers/Hub.ts
+  events:
+  - event: NotifyPool(uint16 indexed centrifugeId, uint64 indexed poolId)
+  - event: NotifyShareClass(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16
+      scId)
+  - event: NotifyShareMetadata(uint16 indexed centrifugeId, uint64 indexed poolId,
+      bytes16 scId, string name, string symbol)
+  - event: NotifySharePrice(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16
+      scId, uint128 poolPerShare)
+  - event: NotifyAssetPrice(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16
+      scId, uint128 assetId, uint128 pricePoolPerAsset)
+  - event: UpdateVault(uint64 indexed poolId, bytes16 scId, uint128 assetId, bytes32
+      vaultOrFactory, uint8 kind)
+  - event: UpdateRestriction(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16
+      scId, bytes payload)
+  - event: UpdateShareHook(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16
+      scId, bytes32 hook)
+  - event: ForwardTransferShares(uint16 indexed centrifugeId, uint64 indexed poolId,
+      bytes16 scId, bytes32 receiver, uint128 amount)
+  - event: UpdateContract(uint16 centrifugeId, uint64 poolId, bytes16 scId, bytes32
+      target, bytes payload)
+- name: Spoke
+  abi_file_path: abis/Spoke.json
+  handler: src/handlers/Spoke.ts
+  events:
+  - event: AddPool(uint64 indexed poolId)
+  - event: AddShareClass(uint64 indexed poolId, bytes16 indexed scId, address token)
+  - event: DeployVault(uint64 indexed poolId, bytes16 indexed scId, address indexed
+      asset, uint256 tokenId, address factory, address vault, uint8 kind)
+  - event: RegisterAsset(uint128 indexed assetId, address indexed asset, uint256 indexed
+      tokenId, string name, string symbol, uint8 decimals, bool isInitialization)
+  - event: UpdateSharePrice(uint64 indexed poolId, bytes16 indexed scId, uint256 price,
+      uint64 computedAt)
+  - event: UpdateAssetPrice(uint64 indexed poolId, bytes16 indexed scId, address indexed
+      asset, uint256 tokenId, uint256 price, uint64 computedAt)
+  - event: LinkVault(uint64 indexed poolId, bytes16 indexed scId, address indexed
+      asset, uint256 tokenId, address vault)
+  - event: UnlinkVault(uint64 indexed poolId, bytes16 indexed scId, address indexed
+      asset, uint256 tokenId, address vault)
+  - event: InitiateTransferShares(uint16 centrifugeId, uint64 indexed poolId, bytes16
+      indexed scId, address indexed sender, bytes32 destinationAddress, uint128 amount)
+  - event: ExecuteTransferShares(uint64 indexed poolId, bytes16 indexed scId, address
+      indexed receiver, uint128 amount)
+  - event: SetRequestManager(uint64 indexed poolId, bytes16 indexed scId, uint128
+      indexed assetId, address manager)
+- name: Gateway
+  abi_file_path: abis/Gateway.json
+  handler: src/handlers/Gateway.ts
+  events:
+  - event: PrepareMessage(uint16 indexed centrifugeId, uint64 poolId, bytes message)
+  - event: ExecuteMessage(uint16 indexed centrifugeId, bytes message)
+  - event: FailMessage(uint16 indexed centrifugeId, bytes message, bytes error)
+  - event: UnderpaidBatch(uint16 indexed centrifugeId, bytes batch)
+  - event: RepayBatch(uint16 indexed centrifugeId, bytes batch)
+- name: BalanceSheet
+  abi_file_path: abis/BalanceSheet.json
+  handler: src/handlers/BalanceSheet.ts
+  events:
+  - event: Deposit(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256
+      tokenId, uint128 amount)
+  - event: Withdraw(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256
+      tokenId, address receiver, uint128 amount, uint128 pricePoolPerAsset)
+  - event: NoteDeposit(uint64 indexed poolId, bytes16 indexed scId, address asset,
+      uint256 tokenId, uint128 amount, uint128 pricePoolPerAsset)
+  - event: Issue(uint64 indexed poolId, bytes16 indexed scId, address to, uint128
+      pricePoolPerShare, uint128 shares)
+  - event: Revoke(uint64 indexed poolId, bytes16 indexed scId, address from, uint128
+      pricePoolPerShare, uint128 shares)
+  - event: UpdateManager(uint64 indexed poolId, address who, bool canManage)
+  - event: TransferSharesFrom(uint64 indexed poolId, bytes16 indexed scId, address
+      sender, address indexed from, address to, uint256 amount)
+- name: Holdings
+  abi_file_path: abis/Holdings.json
+  handler: src/handlers/Holdings.ts
+  events:
+  - event: Initialize(uint64 indexed, bytes16 scId, uint128 indexed assetId, address
+      valuation, bool isLiability, (uint32,uint8)[] accounts)
+    name: Initialize
+  - event: Increase(uint64 indexed, bytes16 scId, uint128 indexed assetId, uint128
+      pricePoolPerAsset, uint128 amount, uint128 increasedValue)
+    name: Increase
+  - event: Decrease(uint64 indexed, bytes16 scId, uint128 indexed assetId, uint128
+      pricePoolPerAsset, uint128 amount, uint128 decreasedValue)
+    name: Decrease
+  - event: Update(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId,
+      bool isPositive, uint128 diffValue)
+  - event: UpdateValuation(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed
+      assetId, address valuation)
+  - event: UpdateIsLiability(uint64 indexed poolId, bytes16 indexed scId, uint128
+      indexed assetId, bool isLiability)
+  - event: SetAccountId(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed
+      assetId, uint8 kind, uint32 accountId)
+- name: ShareClassManager
+  abi_file_path: abis/ShareClassManager.json
+  handler: src/handlers/ShareClassManager.ts
+  events:
+  - event: AddShareClass(uint64 indexed poolId, bytes16 indexed scId, uint32 indexed
+      index, string name, string symbol, bytes32 salt)
+    name: AddShareClassLong
+  - event: AddShareClass(uint64 indexed poolId, bytes16 indexed scId, uint32 indexed
+      index)
+    name: AddShareClassShort
+  - event: UpdateMetadata(uint64 indexed poolId, bytes16 indexed scId, string name,
+      string symbol)
+  - event: UpdateShareClass(uint64 indexed poolId, bytes16 indexed scId, uint128 navPoolPerShare)
+  - event: UpdatePricePoolPerShare(uint64 indexed poolId, bytes16 indexed scId, uint128
+      price, uint64 computedAt)
+  - event: UpdateDepositRequest(uint64 indexed poolId, bytes16 indexed scId, uint128
+      indexed depositAssetId, uint32 epoch, bytes32 investor, uint128 pendingUserAssetAmount,
+      uint128 pendingTotalAssetAmount, uint128 queuedUserAssetAmount, bool pendingCancellation)
+  - event: UpdateRedeemRequest(uint64 indexed poolId, bytes16 indexed scId, uint128
+      indexed payoutAssetId, uint32 epoch, bytes32 investor, uint128 pendingUserShareAmount,
+      uint128 pendingTotalShareAmount, uint128 queuedUserShareAmount, bool pendingCancellation)
+  - event: ApproveDeposits(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed
+      depositAssetId, uint32 epoch, uint128 approvedPoolAmount, uint128 approvedAssetAmount,
+      uint128 pendingAssetAmount)
+  - event: ApproveRedeems(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed
+      payoutAssetId, uint32 epoch, uint128 approvedShareAmount, uint128 pendingShareAmount)
+  - event: IssueShares(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed
+      depositAssetId, uint32 epoch, uint128 navPoolPerShare, uint128 navAssetPerShare,
+      uint128 issuedShareAmount)
+  - event: RevokeShares(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed
+      payoutAssetId, uint32 epoch, uint128 navPoolPerShare, uint128 navAssetPerShare,
+      uint128 revokedShareAmount, uint128 revokedAssetAmount, uint128 revokedPoolAmount)
+  - event: ClaimDeposit(uint64 indexed poolId, bytes16 indexed scId, uint32 epoch,
+      bytes32 investor, uint128 indexed depositAssetId, uint128 paymentAssetAmount,
+      uint128 pendingAssetAmount, uint128 claimedShareAmount, uint64 issuedAt)
+  - event: ClaimRedeem(uint64 indexed poolId, bytes16 indexed scId, uint32 epoch,
+      bytes32 investor, uint128 indexed payoutAssetId, uint128 paymentShareAmount,
+      uint128 pendingShareAmount, uint128 claimedAssetAmount, uint64 revokedAt)
+  - event: RemoteIssueShares(uint16 centrifugeId, uint64 indexed poolId, bytes16 indexed
+      scId, uint128 issuedShareAmount)
+  - event: RemoteRevokeShares(uint16 centrifugeId, uint64 indexed poolId, bytes16
+      indexed scId, uint128 revokedShareAmount)
+- name: MultiAdapter
+  abi_file_path: abis/MultiAdapter.json
+  handler: src/handlers/MultiAdapter.ts
+  events:
+  - event: SendPayload(uint16 indexed centrifugeId, bytes32 indexed payloadId, bytes
+      payload, address adapter, bytes32 adapterData, address refund)
+  - event: SendProof(uint16 indexed centrifugeId, bytes32 indexed payloadId, bytes32
+      payloadHash, address adapter, bytes32 adapterData)
+  - event: HandlePayload(uint16 indexed centrifugeId, bytes32 indexed payloadId, bytes
+      payload, address adapter)
+  - event: HandleProof(uint16 indexed centrifugeId, bytes32 indexed payloadId, bytes32
+      payloadHash, address adapter)
+  - event: File(bytes32 indexed what, uint16 centrifugeId, address[] adapters)
+    name: FileAdapters
+- name: MultiAdapterV3_1
+  abi_file_path: abis/MultiAdapterV3_1.json
+  handler: src/handlers/MultiAdapter.ts
+  events:
+  - event: SendPayload(uint16 indexed centrifugeId, bytes32 indexed payloadId, bytes
+      payload, address adapter, bytes32 adapterData, uint256 gasLimit, uint256 gasPaid,
+      address refund)
+    name: SendPayloadV3_1
+  - event: HandlePayload(uint16 indexed centrifugeId, bytes32 indexed payloadId, bytes
+      payload, address adapter)
+    name: HandlePayloadV3_1
+- name: PoolEscrowFactory
+  abi_file_path: abis/PoolEscrowFactory.json
+  handler: src/handlers/PoolEscrowFactory.ts
+  events:
+  - event: DeployPoolEscrow(uint64 indexed poolId, address indexed escrow)
+- name: MerkleProofManagerFactory
+  abi_file_path: abis/MerkleProofManagerFactory.json
+  handler: src/handlers/MerkleProofManager.ts
+  events:
+  - event: DeployMerkleProofManager(uint64 indexed poolId, address indexed manager)
+- name: OnOfframpManagerFactory
+  abi_file_path: abis/OnOfframpManagerFactory.json
+  handler: src/handlers/OnOffRampManager.ts
+  events:
+  - event: DeployOnOfframpManager(uint64 indexed poolId, bytes16 scId, address indexed
+      manager)
+- name: BatchRequestManager
+  abi_file_path: abis/AsyncRequestManager.json
+  handler: src/handlers/BatchRequestManager.ts
+  events:
+  - event: AddVault(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId,
+      address vault)
+  - event: RemoveVault(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed
+      assetId, address vault)
+  - event: TriggerRedeemRequest(uint64 indexed poolId, bytes16 indexed scId, address
+      user, address indexed asset, uint256 tokenId, uint128 shares)
+- name: SyncMgr
+  abi_file_path: abis/SyncManager.json
+  handler: src/handlers/SyncManager.ts
+  events:
+  - event: SetMaxReserve(uint64 indexed poolId, bytes16 indexed scId, address asset,
+      uint256 tokenId, uint128 maxReserve)
+- name: HubRegistryV3_1
+  abi_file_path: abis/HubRegistry.json
+  handler: src/handlers/HubRegistry.ts
+  events:
+  - event: NewPool(uint64 poolId, address indexed manager, uint128 indexed currency)
+    name: V3_1NewPool
+  - event: NewAsset(uint128 indexed assetId, uint8 decimals)
+    name: V3_1NewAsset
+  - event: UpdateCurrency(uint64 indexed poolId, uint128 currency)
+    name: V3_1UpdateCurrency
+  - event: UpdateManager(uint64 indexed poolId, address indexed manager, bool canManage)
+    name: V3_1UpdateManager
+  - event: SetMetadata(uint64 indexed poolId, bytes metadata)
+    name: V3_1SetMetadata
+- name: HubV3_1
+  abi_file_path: abis/Hub.json
+  handler: src/handlers/Hub.ts
+  events:
+  - event: NotifyPool(uint16 indexed centrifugeId, uint64 indexed poolId)
+    name: V3_1NotifyPool
+  - event: NotifyShareClass(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16
+      scId)
+    name: V3_1NotifyShareClass
+  - event: NotifyShareMetadata(uint16 indexed centrifugeId, uint64 indexed poolId,
+      bytes16 scId, string name, string symbol)
+    name: V3_1NotifyShareMetadata
+  - event: NotifySharePrice(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16
+      scId, uint128 poolPerShare)
+    name: V3_1NotifySharePrice
+  - event: NotifyAssetPrice(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16
+      scId, uint128 assetId, uint128 pricePoolPerAsset)
+    name: V3_1NotifyAssetPrice
+  - event: UpdateVault(uint64 indexed poolId, bytes16 scId, uint128 assetId, bytes32
+      vaultOrFactory, uint8 kind)
+    name: V3_1UpdateVault
+  - event: UpdateRestriction(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16
+      scId, bytes payload)
+    name: V3_1UpdateRestriction
+  - event: UpdateShareHook(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16
+      scId, bytes32 hook)
+    name: V3_1UpdateShareHook
+  - event: ForwardTransferShares(uint16 indexed centrifugeId, uint64 indexed poolId,
+      bytes16 scId, bytes32 receiver, uint128 amount)
+    name: V3_1ForwardTransferShares
+  - event: UpdateContract(uint16 centrifugeId, uint64 poolId, bytes16 scId, bytes32
+      target, bytes payload)
+    name: V3_1UpdateContract
+- name: SpokeV3_1
+  abi_file_path: abis/Spoke.json
+  handler: src/handlers/Spoke.ts
+  events:
+  - event: AddPool(uint64 indexed poolId)
+    name: V3_1AddPool
+  - event: AddShareClass(uint64 indexed poolId, bytes16 indexed scId, address token)
+    name: V3_1AddShareClass
+  - event: DeployVault(uint64 indexed poolId, bytes16 indexed scId, address indexed
+      asset, uint256 tokenId, address factory, address vault, uint8 kind)
+    name: V3_1DeployVault
+  - event: RegisterAsset(uint128 indexed assetId, address indexed asset, uint256 indexed
+      tokenId, string name, string symbol, uint8 decimals, bool isInitialization)
+    name: V3_1RegisterAsset
+  - event: UpdateSharePrice(uint64 indexed poolId, bytes16 indexed scId, uint256 price,
+      uint64 computedAt)
+    name: V3_1UpdateSharePrice
+  - event: UpdateAssetPrice(uint64 indexed poolId, bytes16 indexed scId, address indexed
+      asset, uint256 tokenId, uint256 price, uint64 computedAt)
+    name: V3_1UpdateAssetPrice
+  - event: LinkVault(uint64 indexed poolId, bytes16 indexed scId, address indexed
+      asset, uint256 tokenId, address vault)
+    name: V3_1LinkVault
+  - event: UnlinkVault(uint64 indexed poolId, bytes16 indexed scId, address indexed
+      asset, uint256 tokenId, address vault)
+    name: V3_1UnlinkVault
+  - event: InitiateTransferShares(uint16 centrifugeId, uint64 indexed poolId, bytes16
+      indexed scId, address indexed sender, bytes32 destinationAddress, uint128 amount)
+    name: V3_1InitiateTransferShares
+  - event: ExecuteTransferShares(uint64 indexed poolId, bytes16 indexed scId, address
+      indexed receiver, uint128 amount)
+    name: V3_1ExecuteTransferShares
+  - event: SetRequestManager(uint64 indexed poolId, bytes16 indexed scId, uint128
+      indexed assetId, address manager)
+    name: V3_1SetRequestManager
+- name: GatewayV3_1
+  abi_file_path: abis/Gateway.json
+  handler: src/handlers/Gateway.ts
+  events:
+  - event: PrepareMessage(uint16 indexed centrifugeId, uint64 poolId, bytes message)
+    name: V3_1PrepareMessage
+  - event: ExecuteMessage(uint16 indexed centrifugeId, bytes message)
+    name: V3_1ExecuteMessage
+  - event: FailMessage(uint16 indexed centrifugeId, bytes message, bytes error)
+    name: V3_1FailMessage
+  - event: UnderpaidBatch(uint16 indexed centrifugeId, bytes batch)
+    name: V3_1UnderpaidBatch
+  - event: RepayBatch(uint16 indexed centrifugeId, bytes batch)
+    name: V3_1RepayBatch
+- name: BalanceSheetV3_1
+  abi_file_path: abis/BalanceSheet.json
+  handler: src/handlers/BalanceSheet.ts
+  events:
+  - event: Deposit(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256
+      tokenId, uint128 amount)
+    name: V3_1Deposit
+  - event: Withdraw(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256
+      tokenId, address receiver, uint128 amount, uint128 pricePoolPerAsset)
+    name: V3_1Withdraw
+  - event: NoteDeposit(uint64 indexed poolId, bytes16 indexed scId, address asset,
+      uint256 tokenId, uint128 amount, uint128 pricePoolPerAsset)
+    name: V3_1NoteDeposit
+  - event: Issue(uint64 indexed poolId, bytes16 indexed scId, address to, uint128
+      pricePoolPerShare, uint128 shares)
+    name: V3_1Issue
+  - event: Revoke(uint64 indexed poolId, bytes16 indexed scId, address from, uint128
+      pricePoolPerShare, uint128 shares)
+    name: V3_1Revoke
+  - event: UpdateManager(uint64 indexed poolId, address who, bool canManage)
+    name: V3_1BSUpdateManager
+  - event: TransferSharesFrom(uint64 indexed poolId, bytes16 indexed scId, address
+      sender, address indexed from, address to, uint256 amount)
+    name: V3_1TransferSharesFrom
+- name: HoldingsV3_1
+  abi_file_path: abis/Holdings.json
+  handler: src/handlers/Holdings.ts
+  events:
+  - event: Initialize(uint64 indexed, bytes16 scId, uint128 indexed assetId, address
+      valuation, bool isLiability, (uint32,uint8)[] accounts)
+    name: V3_1Initialize
+  - event: Increase(uint64 indexed, bytes16 scId, uint128 indexed assetId, uint128
+      pricePoolPerAsset, uint128 amount, uint128 increasedValue)
+    name: V3_1Increase
+  - event: Decrease(uint64 indexed, bytes16 scId, uint128 indexed assetId, uint128
+      pricePoolPerAsset, uint128 amount, uint128 decreasedValue)
+    name: V3_1Decrease
+  - event: Update(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId,
+      bool isPositive, uint128 diffValue)
+    name: V3_1Update
+  - event: UpdateValuation(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed
+      assetId, address valuation)
+    name: V3_1UpdateValuation
+  - event: UpdateIsLiability(uint64 indexed poolId, bytes16 indexed scId, uint128
+      indexed assetId, bool isLiability)
+    name: V3_1UpdateIsLiability
+  - event: SetAccountId(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed
+      assetId, uint8 kind, uint32 accountId)
+    name: V3_1SetAccountId
+- name: ShareClassManagerV3_1
+  abi_file_path: abis/ShareClassManager.json
+  handler: src/handlers/ShareClassManager.ts
+  events:
+  - event: AddShareClass(uint64 indexed poolId, bytes16 indexed scId, uint32 indexed
+      index, string name, string symbol, bytes32 salt)
+    name: V3_1AddShareClassLong
+  - event: AddShareClass(uint64 indexed poolId, bytes16 indexed scId, uint32 indexed
+      index)
+    name: V3_1AddShareClassShort
+  - event: UpdateMetadata(uint64 indexed poolId, bytes16 indexed scId, string name,
+      string symbol)
+    name: V3_1UpdateMetadata
+  - event: UpdateShareClass(uint64 indexed poolId, bytes16 indexed scId, uint128 navPoolPerShare)
+    name: V3_1UpdateShareClass
+  - event: UpdatePricePoolPerShare(uint64 indexed poolId, bytes16 indexed scId, uint128
+      price, uint64 computedAt)
+    name: V3_1UpdatePricePoolPerShare
+  - event: UpdateDepositRequest(uint64 indexed poolId, bytes16 indexed scId, uint128
+      indexed depositAssetId, uint32 epoch, bytes32 investor, uint128 pendingUserAssetAmount,
+      uint128 pendingTotalAssetAmount, uint128 queuedUserAssetAmount, bool pendingCancellation)
+    name: V3_1UpdateDepositRequest
+  - event: UpdateRedeemRequest(uint64 indexed poolId, bytes16 indexed scId, uint128
+      indexed payoutAssetId, uint32 epoch, bytes32 investor, uint128 pendingUserShareAmount,
+      uint128 pendingTotalShareAmount, uint128 queuedUserShareAmount, bool pendingCancellation)
+    name: V3_1UpdateRedeemRequest
+  - event: ApproveDeposits(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed
+      depositAssetId, uint32 epoch, uint128 approvedPoolAmount, uint128 approvedAssetAmount,
+      uint128 pendingAssetAmount)
+    name: V3_1ApproveDeposits
+  - event: ApproveRedeems(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed
+      payoutAssetId, uint32 epoch, uint128 approvedShareAmount, uint128 pendingShareAmount)
+    name: V3_1ApproveRedeems
+  - event: IssueShares(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed
+      depositAssetId, uint32 epoch, uint128 navPoolPerShare, uint128 navAssetPerShare,
+      uint128 issuedShareAmount)
+    name: V3_1IssueShares
+  - event: RevokeShares(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed
+      payoutAssetId, uint32 epoch, uint128 navPoolPerShare, uint128 navAssetPerShare,
+      uint128 revokedShareAmount, uint128 revokedAssetAmount, uint128 revokedPoolAmount)
+    name: V3_1RevokeShares
+  - event: ClaimDeposit(uint64 indexed poolId, bytes16 indexed scId, uint32 epoch,
+      bytes32 investor, uint128 indexed depositAssetId, uint128 paymentAssetAmount,
+      uint128 pendingAssetAmount, uint128 claimedShareAmount, uint64 issuedAt)
+    name: V3_1ClaimDeposit
+  - event: ClaimRedeem(uint64 indexed poolId, bytes16 indexed scId, uint32 epoch,
+      bytes32 investor, uint128 indexed payoutAssetId, uint128 paymentShareAmount,
+      uint128 pendingShareAmount, uint128 claimedAssetAmount, uint64 revokedAt)
+    name: V3_1ClaimRedeem
+  - event: RemoteIssueShares(uint16 centrifugeId, uint64 indexed poolId, bytes16 indexed
+      scId, uint128 issuedShareAmount)
+    name: V3_1RemoteIssueShares
+  - event: RemoteRevokeShares(uint16 centrifugeId, uint64 indexed poolId, bytes16
+      indexed scId, uint128 revokedShareAmount)
+    name: V3_1RemoteRevokeShares
+- name: Vault
+  abi_file_path: abis/AsyncVault.json
+  handler: src/handlers/Vault.ts
+  events:
+  - event: DepositRequest(address indexed controller, address indexed owner, uint256
+      indexed requestId, address sender, uint256 assets)
+  - event: RedeemRequest(address indexed controller, address indexed owner, uint256
+      indexed requestId, address sender, uint256 shares)
+  - event: DepositClaimable(address indexed controller, uint256 indexed requestId,
+      uint256 assets, uint256 shares)
+  - event: RedeemClaimable(address indexed controller, uint256 indexed requestId,
+      uint256 assets, uint256 shares)
+  - event: Deposit(address indexed sender, address indexed owner, uint256 assets,
+      uint256 shares)
+  - event: Withdraw(address indexed sender, address indexed receiver, address indexed
+      owner, uint256 assets, uint256 shares)
+  - event: CancelDepositRequest(address indexed controller, uint256 indexed requestId,
+      address sender)
+  - event: CancelDepositClaim(address indexed controller, address indexed receiver,
+      uint256 indexed requestId, address sender, uint256 assets)
+  - event: CancelDepositClaimable(address indexed controller, uint256 indexed requestId,
+      uint256 assets)
+  - event: CancelRedeemRequest(address indexed controller, uint256 indexed requestId,
+      address sender)
+  - event: CancelRedeemClaim(address indexed controller, address indexed receiver,
+      uint256 indexed requestId, address sender, uint256 shares)
+  - event: CancelRedeemClaimable(address indexed controller, uint256 indexed requestId,
+      uint256 shares)
+- name: PoolEscrow
+  abi_file_path: abis/PoolEscrow.json
+  handler: src/handlers/PoolEscrowFactory.ts
+  events:
+  - event: Deposit(address indexed asset, uint256 indexed tokenId, uint64 indexed
+      poolId, bytes16 scId, uint128 value)
+    name: EscrowDeposit
+  - event: Withdraw(address indexed asset, uint256 indexed tokenId, uint64 indexed
+      poolId, bytes16 scId, uint128 value)
+    name: EscrowWithdraw
+- name: OnOfframpManager
+  abi_file_path: abis/OnOfframpManager.json
+  handler: src/handlers/OnOffRampManager.ts
+  events:
+  - event: UpdateRelayer(address indexed relayer, bool isEnabled)
+  - event: UpdateOnramp(address indexed asset, bool isEnabled)
+  - event: UpdateOfframp(address indexed asset, address receiver, bool isEnabled)
+- name: MerkleProofManager
+  abi_file_path: abis/MerkleProofManager.json
+  handler: src/handlers/MerkleProofManager.ts
+  events:
+  - event: UpdatePolicy(address indexed strategist, bytes32 oldRoot, bytes32 newRoot)
+- name: TokenInstance
+  abi_file_path: abis/ERC20.json
+  handler: src/handlers/TokenInstance.ts
+  events:
+  - event: Transfer(address indexed from, address indexed to, uint256 value)
+- name: VaultRegistry
+  abi_file_path: abis/Spoke.json
+  handler: src/handlers/VaultRegistry.ts
+  events:
+  - event: DeployVault(uint64 indexed poolId, bytes16 indexed scId, address indexed
+      asset, uint256 tokenId, address factory, address vault, uint8 kind)
+    name: VaultRegistryDeployVault
+  - event: LinkVault(uint64 indexed poolId, bytes16 indexed scId, address indexed
+      asset, uint256 tokenId, address vault)
+    name: VaultRegistryLinkVault
+  - event: UnlinkVault(uint64 indexed poolId, bytes16 indexed scId, address indexed
+      asset, uint256 tokenId, address vault)
+    name: VaultRegistryUnlinkVault
 chains:
-  - id: 1 # Ethereum
-    start_block: 22924235
-    contracts:
-      - name: HubRegistry
-        address: "0x12044ef361Cc3446Cb7d36541C8411EE4e6f52cb"
-      - name: Hub
-        address: "0x9c8454A506263549f07c80698E276e3622077098"
-      - name: Spoke
-        address: "0xd30Da1d7F964E5f6C2D9fE2AAA97517F6B23FA2B"
-      - name: Gateway
-        address: "0x51eA340B3fe9059B48f935D5A80e127d587B6f89"
-      - name: BalanceSheet
-        address: "0xBcC8D02d409e439D98453C0b1ffa398dFFb31fda"
-      - name: Holdings
-        address: "0x0261FA29b3F2784AF17874428b58d971b6652C47"
-      - name: ShareClassManager
-        address: "0xe88e712d60bfd23048Dbc677FEb44E2145F2cDf4"
-      - name: MultiAdapter
-        address: "0x457C91384C984b1659157160e8543adb12BC5317"
-      - name: PoolEscrowFactory
-        address: "0xD166B3210edBeEdEa73c7b2e8aB64BDd30c980E9"
-      - name: MerkleProofManagerFactory
-        address: "0xaBd3cDc17C15a9E7771876cE24aB10A8E722781d"
-      - name: OnOfframpManagerFactory
-        address: "0xcb084F79e8AE54e1373130F4F7119214FCe972a9"
-      - name: BatchRequestManager
-        address: "0xF06f89a1b6C601235729A689595571B7455dD433"
-        start_block: 22996635
-      - name: MultiAdapterV3_1
-        address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
-        start_block: 24319304
-      - name: HubRegistryV3_1
-        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
-        start_block: 24319303
-      - name: HubV3_1
-        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
-        start_block: 24319303
-      - name: SpokeV3_1
-        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
-        start_block: 24319303
-      - name: GatewayV3_1
-        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
-        start_block: 24319303
-      - name: BalanceSheetV3_1
-        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
-        start_block: 24319303
-      - name: HoldingsV3_1
-        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
-        start_block: 24319303
-      - name: ShareClassManagerV3_1
-        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
-        start_block: 24319303
-      - name: HubRegistryV3_1
-        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
-        start_block: 425757109
-      - name: HubV3_1
-        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
-        start_block: 425757109
-      - name: SpokeV3_1
-        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
-        start_block: 425757109
-      - name: GatewayV3_1
-        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
-        start_block: 425757109
-      - name: BalanceSheetV3_1
-        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
-        start_block: 425757109
-      - name: HoldingsV3_1
-        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
-        start_block: 425757109
-      - name: ShareClassManagerV3_1
-        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
-        start_block: 425757109
-      - name: HubRegistryV3_1
-        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
-        start_block: 41362298
-      - name: HubV3_1
-        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
-        start_block: 41362298
-      - name: SpokeV3_1
-        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
-        start_block: 41362298
-      - name: GatewayV3_1
-        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
-        start_block: 41362298
-      - name: BalanceSheetV3_1
-        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
-        start_block: 41362298
-      - name: HoldingsV3_1
-        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
-        start_block: 41362298
-      - name: ShareClassManagerV3_1
-        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
-        start_block: 41362298
-      - name: HubRegistryV3_1
-        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
-        start_block: 76719845
-      - name: HubV3_1
-        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
-        start_block: 76719845
-      - name: SpokeV3_1
-        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
-        start_block: 76719845
-      - name: GatewayV3_1
-        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
-        start_block: 76719845
-      - name: BalanceSheetV3_1
-        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
-        start_block: 76719845
-      - name: HoldingsV3_1
-        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
-        start_block: 76719845
-      - name: ShareClassManagerV3_1
-        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
-        start_block: 76719845
-      - name: HubRegistryV3_1
-        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
-        start_block: 77734397
-      - name: HubV3_1
-        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
-        start_block: 77734397
-      - name: SpokeV3_1
-        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
-        start_block: 77734397
-      - name: GatewayV3_1
-        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
-        start_block: 77734397
-      - name: BalanceSheetV3_1
-        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
-        start_block: 77734397
-      - name: HoldingsV3_1
-        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
-        start_block: 77734397
-      - name: ShareClassManagerV3_1
-        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
-        start_block: 77734397
-      - name: HubRegistryV3_1
-        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
-        start_block: 48512998
-      - name: HubV3_1
-        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
-        start_block: 48512998
-      - name: SpokeV3_1
-        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
-        start_block: 48512998
-      - name: GatewayV3_1
-        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
-        start_block: 48512998
-      - name: BalanceSheetV3_1
-        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
-        start_block: 48512998
-      - name: HoldingsV3_1
-        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
-        start_block: 48512998
-      - name: ShareClassManagerV3_1
-        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
-        start_block: 48512998
-      - name: VaultRegistry
-        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
-        start_block: 22996635
-      - name: SyncMgr
-        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
-        start_block: 22996635
-      # Factory-deployed contracts (no address — registered dynamically)
-      - name: Vault
-      - name: PoolEscrow
-      - name: OnOfframpManager
-      - name: MerkleProofManager
-      - name: TokenInstance
-
-  - id: 42161 # Arbitrum
-    start_block: 357982308
-    contracts:
-      - name: HubRegistry
-        address: "0x12044ef361Cc3446Cb7d36541C8411EE4e6f52cb"
-      - name: Hub
-        address: "0x9c8454A506263549f07c80698E276e3622077098"
-      - name: Spoke
-        address: "0xd30Da1d7F964E5f6C2D9fE2AAA97517F6B23FA2B"
-      - name: Gateway
-        address: "0x51eA340B3fe9059B48f935D5A80e127d587B6f89"
-      - name: BalanceSheet
-        address: "0xBcC8D02d409e439D98453C0b1ffa398dFFb31fda"
-      - name: Holdings
-        address: "0x0261FA29b3F2784AF17874428b58d971b6652C47"
-      - name: ShareClassManager
-        address: "0xe88e712d60bfd23048Dbc677FEb44E2145F2cDf4"
-      - name: MultiAdapter
-        address: "0x457C91384C984b1659157160e8543adb12BC5317"
-      - name: PoolEscrowFactory
-        address: "0xD166B3210edBeEdEa73c7b2e8aB64BDd30c980E9"
-      - name: MerkleProofManagerFactory
-        address: "0xaBd3cDc17C15a9E7771876cE24aB10A8E722781d"
-      - name: OnOfframpManagerFactory
-        address: "0xcb084F79e8AE54e1373130F4F7119214FCe972a9"
-      - name: BatchRequestManager
-        address: "0xF06f89a1b6C601235729A689595571B7455dD433"
-        start_block: 362480836
-      - name: MultiAdapterV3_1
-        address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
-        start_block: 425757147
-      - name: VaultRegistry
-        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
-        start_block: 362480836
-      - name: SyncMgr
-        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
-        start_block: 362480836
-      # Factory-deployed contracts (no address — registered dynamically)
-      - name: Vault
-      - name: PoolEscrow
-      - name: OnOfframpManager
-      - name: MerkleProofManager
-      - name: TokenInstance
-
-  - id: 8453 # Base
-    start_block: 32901251
-    contracts:
-      - name: HubRegistry
-        address: "0x12044ef361Cc3446Cb7d36541C8411EE4e6f52cb"
-      - name: Hub
-        address: "0x9c8454A506263549f07c80698E276e3622077098"
-      - name: Spoke
-        address: "0xd30Da1d7F964E5f6C2D9fE2AAA97517F6B23FA2B"
-      - name: Gateway
-        address: "0x51eA340B3fe9059B48f935D5A80e127d587B6f89"
-      - name: BalanceSheet
-        address: "0xBcC8D02d409e439D98453C0b1ffa398dFFb31fda"
-      - name: Holdings
-        address: "0x0261FA29b3F2784AF17874428b58d971b6652C47"
-      - name: ShareClassManager
-        address: "0xe88e712d60bfd23048Dbc677FEb44E2145F2cDf4"
-      - name: MultiAdapter
-        address: "0x457C91384C984b1659157160e8543adb12BC5317"
-      - name: PoolEscrowFactory
-        address: "0xD166B3210edBeEdEa73c7b2e8aB64BDd30c980E9"
-      - name: MerkleProofManagerFactory
-        address: "0xaBd3cDc17C15a9E7771876cE24aB10A8E722781d"
-      - name: OnOfframpManagerFactory
-        address: "0xcb084F79e8AE54e1373130F4F7119214FCe972a9"
-      - name: BatchRequestManager
-        address: "0xF06f89a1b6C601235729A689595571B7455dD433"
-      - name: MultiAdapterV3_1
-        address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
-        start_block: 41362303
-      - name: VaultRegistry
-        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
-      - name: SyncMgr
-        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
-      # Factory-deployed contracts (no address — registered dynamically)
-      - name: Vault
-      - name: PoolEscrow
-      - name: OnOfframpManager
-      - name: MerkleProofManager
-      - name: TokenInstance
-
-  - id: 43114 # Avalanche
-    start_block: 65492900
-    contracts:
-      - name: HubRegistry
-        address: "0x12044ef361Cc3446Cb7d36541C8411EE4e6f52cb"
-      - name: Hub
-        address: "0x9c8454A506263549f07c80698E276e3622077098"
-      - name: Spoke
-        address: "0xd30Da1d7F964E5f6C2D9fE2AAA97517F6B23FA2B"
-      - name: Gateway
-        address: "0x51eA340B3fe9059B48f935D5A80e127d587B6f89"
-      - name: BalanceSheet
-        address: "0xBcC8D02d409e439D98453C0b1ffa398dFFb31fda"
-      - name: Holdings
-        address: "0x0261FA29b3F2784AF17874428b58d971b6652C47"
-      - name: ShareClassManager
-        address: "0xe88e712d60bfd23048Dbc677FEb44E2145F2cDf4"
-      - name: MultiAdapter
-        address: "0x457C91384C984b1659157160e8543adb12BC5317"
-      - name: PoolEscrowFactory
-        address: "0xD166B3210edBeEdEa73c7b2e8aB64BDd30c980E9"
-      - name: MerkleProofManagerFactory
-        address: "0xaBd3cDc17C15a9E7771876cE24aB10A8E722781d"
-      - name: OnOfframpManagerFactory
-        address: "0xcb084F79e8AE54e1373130F4F7119214FCe972a9"
-      - name: BatchRequestManager
-        address: "0xF06f89a1b6C601235729A689595571B7455dD433"
-        start_block: 66198180
-      - name: MultiAdapterV3_1
-        address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
-        start_block: 76719850
-      - name: VaultRegistry
-        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
-        start_block: 66198180
-      - name: SyncMgr
-        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
-        start_block: 66198180
-      # Factory-deployed contracts (no address — registered dynamically)
-      - name: Vault
-      - name: PoolEscrow
-      - name: OnOfframpManager
-      - name: MerkleProofManager
-      - name: TokenInstance
-
-  - id: 56 # Binance Smart Chain
-    start_block: 54800894
-    contracts:
-      - name: HubRegistry
-        address: "0x12044ef361Cc3446Cb7d36541C8411EE4e6f52cb"
-      - name: Hub
-        address: "0x9c8454A506263549f07c80698E276e3622077098"
-      - name: Spoke
-        address: "0xd30Da1d7F964E5f6C2D9fE2AAA97517F6B23FA2B"
-      - name: Gateway
-        address: "0x51eA340B3fe9059B48f935D5A80e127d587B6f89"
-      - name: BalanceSheet
-        address: "0xBcC8D02d409e439D98453C0b1ffa398dFFb31fda"
-      - name: Holdings
-        address: "0x0261FA29b3F2784AF17874428b58d971b6652C47"
-      - name: ShareClassManager
-        address: "0xe88e712d60bfd23048Dbc677FEb44E2145F2cDf4"
-      - name: MultiAdapter
-        address: "0x457C91384C984b1659157160e8543adb12BC5317"
-      - name: PoolEscrowFactory
-        address: "0xD166B3210edBeEdEa73c7b2e8aB64BDd30c980E9"
-      - name: MerkleProofManagerFactory
-        address: "0xaBd3cDc17C15a9E7771876cE24aB10A8E722781d"
-      - name: OnOfframpManagerFactory
-        address: "0xcb084F79e8AE54e1373130F4F7119214FCe972a9"
-      - name: BatchRequestManager
-        address: "0xF06f89a1b6C601235729A689595571B7455dD433"
-      - name: MultiAdapterV3_1
-        address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
-        start_block: 77734419
-      - name: VaultRegistry
-        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
-      - name: SyncMgr
-        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
-      # Factory-deployed contracts (no address — registered dynamically)
-      - name: Vault
-      - name: PoolEscrow
-      - name: OnOfframpManager
-      - name: MerkleProofManager
-      - name: TokenInstance
-
-  - id: 98866 # Plume
-    start_block: 11931870
-    contracts:
-      - name: HubRegistry
-        address: "0x12044ef361Cc3446Cb7d36541C8411EE4e6f52cb"
-      - name: Hub
-        address: "0x9c8454A506263549f07c80698E276e3622077098"
-      - name: Spoke
-        address: "0xd30Da1d7F964E5f6C2D9fE2AAA97517F6B23FA2B"
-      - name: Gateway
-        address: "0x51eA340B3fe9059B48f935D5A80e127d587B6f89"
-      - name: BalanceSheet
-        address: "0xBcC8D02d409e439D98453C0b1ffa398dFFb31fda"
-      - name: Holdings
-        address: "0x0261FA29b3F2784AF17874428b58d971b6652C47"
-      - name: ShareClassManager
-        address: "0xe88e712d60bfd23048Dbc677FEb44E2145F2cDf4"
-      - name: MultiAdapter
-        address: "0x457C91384C984b1659157160e8543adb12BC5317"
-      - name: PoolEscrowFactory
-        address: "0xD166B3210edBeEdEa73c7b2e8aB64BDd30c980E9"
-      - name: MerkleProofManagerFactory
-        address: "0xaBd3cDc17C15a9E7771876cE24aB10A8E722781d"
-      - name: OnOfframpManagerFactory
-        address: "0xcb084F79e8AE54e1373130F4F7119214FCe972a9"
-      - name: BatchRequestManager
-        address: "0xF06f89a1b6C601235729A689595571B7455dD433"
-        start_block: 15794381
-      - name: MultiAdapterV3_1
-        address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
-        start_block: 48513023
-      - name: VaultRegistry
-        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
-        start_block: 15794381
-      - name: SyncMgr
-        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
-        start_block: 15794381
-      # Factory-deployed contracts (no address — registered dynamically)
-      - name: Vault
-      - name: PoolEscrow
-      - name: OnOfframpManager
-      - name: MerkleProofManager
-      - name: TokenInstance
-
-  - id: 10 # Optimism
-    start_block: 147002472
-    contracts:
-      - name: HubRegistry
-        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
-      - name: Hub
-        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
-      - name: Spoke
-        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
-      - name: Gateway
-        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
-      - name: BalanceSheet
-        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
-      - name: Holdings
-        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
-      - name: ShareClassManager
-        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
-      - name: MultiAdapterV3_1
-        address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
-      - name: PoolEscrowFactory
-        address: "0x5187A505c485E22f0b8a5FBdF69eF1c29C478CE3"
-      - name: MerkleProofManagerFactory
-        address: "0xc5243bdEa2d86eA7541AC69084dF3EDdc137a18b"
-      - name: OnOfframpManagerFactory
-        address: "0x2539e60B0B50D7BD004A09e9D2b7E8c86EB0AaF6"
-      - name: BatchRequestManager
-        address: "0xc52Bd1Bdfa0135147D3F01a0B6D6cd0A831dFe77"
-      - name: VaultRegistry
-        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
-      - name: SyncMgr
-        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
-      - name: Vault
-      - name: PoolEscrow
-      - name: OnOfframpManager
-      - name: MerkleProofManager
-      - name: TokenInstance
-
-  - id: 999 # Hyperliquid
-    start_block: 25782445
-    contracts:
-      - name: HubRegistry
-        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
-      - name: Hub
-        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
-      - name: Spoke
-        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
-      - name: Gateway
-        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
-      - name: BalanceSheet
-        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
-      - name: Holdings
-        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
-      - name: ShareClassManager
-        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
-      - name: MultiAdapterV3_1
-        address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
-      - name: PoolEscrowFactory
-        address: "0x5187A505c485E22f0b8a5FBdF69eF1c29C478CE3"
-      - name: MerkleProofManagerFactory
-        address: "0xc5243bdEa2d86eA7541AC69084dF3EDdc137a18b"
-      - name: OnOfframpManagerFactory
-        address: "0x2539e60B0B50D7BD004A09e9D2b7E8c86EB0AaF6"
-      - name: BatchRequestManager
-        address: "0xc52Bd1Bdfa0135147D3F01a0B6D6cd0A831dFe77"
-      - name: VaultRegistry
-        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
-      - name: SyncMgr
-        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
-      - name: Vault
-      - name: PoolEscrow
-      - name: OnOfframpManager
-      - name: MerkleProofManager
-      - name: TokenInstance
-
-  - id: 143 # Monad
-    start_block: 51882383
-    contracts:
-      - name: HubRegistry
-        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
-      - name: Hub
-        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
-      - name: Spoke
-        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
-      - name: Gateway
-        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
-      - name: BalanceSheet
-        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
-      - name: Holdings
-        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
-      - name: ShareClassManager
-        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
-      - name: MultiAdapterV3_1
-        address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
-      - name: PoolEscrowFactory
-        address: "0x5187A505c485E22f0b8a5FBdF69eF1c29C478CE3"
-      - name: MerkleProofManagerFactory
-        address: "0xc5243bdEa2d86eA7541AC69084dF3EDdc137a18b"
-      - name: OnOfframpManagerFactory
-        address: "0x2539e60B0B50D7BD004A09e9D2b7E8c86EB0AaF6"
-      - name: BatchRequestManager
-        address: "0xc52Bd1Bdfa0135147D3F01a0B6D6cd0A831dFe77"
-      - name: VaultRegistry
-        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
-      - name: SyncMgr
-        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
-      - name: Vault
-      - name: PoolEscrow
-      - name: OnOfframpManager
-      - name: MerkleProofManager
-      - name: TokenInstance
+- id: 1
+  start_block: 22924235
+  contracts:
+  - name: HubRegistry
+    address: '0x12044ef361Cc3446Cb7d36541C8411EE4e6f52cb'
+  - name: Hub
+    address: '0x9c8454A506263549f07c80698E276e3622077098'
+  - name: Spoke
+    address: '0xd30Da1d7F964E5f6C2D9fE2AAA97517F6B23FA2B'
+  - name: Gateway
+    address: '0x51eA340B3fe9059B48f935D5A80e127d587B6f89'
+  - name: BalanceSheet
+    address: '0xBcC8D02d409e439D98453C0b1ffa398dFFb31fda'
+  - name: Holdings
+    address: '0x0261FA29b3F2784AF17874428b58d971b6652C47'
+  - name: ShareClassManager
+    address: '0xe88e712d60bfd23048Dbc677FEb44E2145F2cDf4'
+  - name: MultiAdapter
+    address: '0x457C91384C984b1659157160e8543adb12BC5317'
+  - name: PoolEscrowFactory
+    address: '0xD166B3210edBeEdEa73c7b2e8aB64BDd30c980E9'
+  - name: MerkleProofManagerFactory
+    address: '0xaBd3cDc17C15a9E7771876cE24aB10A8E722781d'
+  - name: OnOfframpManagerFactory
+    address: '0xcb084F79e8AE54e1373130F4F7119214FCe972a9'
+  - name: BatchRequestManager
+    address: '0xF06f89a1b6C601235729A689595571B7455dD433'
+    start_block: 22996635
+  - name: MultiAdapterV3_1
+    address: '0x35C837F0A54B715a23D193E1476BFC9BC30073BE'
+    start_block: 24319304
+  - name: VaultRegistry
+    address: '0xd9531AC47928c3386346f82d9A2478960bf2CA7B'
+    start_block: 22996635
+  - name: SyncMgr
+    address: '0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D'
+    start_block: 22996635
+  - name: Vault
+  - name: PoolEscrow
+  - name: OnOfframpManager
+  - name: MerkleProofManager
+  - name: TokenInstance
+  - name: HubRegistryV3_1
+    address: '0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93'
+    start_block: 24319303
+  - name: HubV3_1
+    address: '0xA4A7Bb3831958463b3FE3E27A6a160F764341953'
+    start_block: 24319303
+  - name: SpokeV3_1
+    address: '0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB'
+    start_block: 24319303
+  - name: GatewayV3_1
+    address: '0x19a524D03aA94ECEe41a80341537BCFCb47D3172'
+    start_block: 24319303
+  - name: BalanceSheetV3_1
+    address: '0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e'
+    start_block: 24319303
+  - name: HoldingsV3_1
+    address: '0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d'
+    start_block: 24319303
+  - name: ShareClassManagerV3_1
+    address: '0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf'
+    start_block: 24319303
+- id: 42161
+  start_block: 357982308
+  contracts:
+  - name: HubRegistry
+    address: '0x12044ef361Cc3446Cb7d36541C8411EE4e6f52cb'
+  - name: Hub
+    address: '0x9c8454A506263549f07c80698E276e3622077098'
+  - name: Spoke
+    address: '0xd30Da1d7F964E5f6C2D9fE2AAA97517F6B23FA2B'
+  - name: Gateway
+    address: '0x51eA340B3fe9059B48f935D5A80e127d587B6f89'
+  - name: BalanceSheet
+    address: '0xBcC8D02d409e439D98453C0b1ffa398dFFb31fda'
+  - name: Holdings
+    address: '0x0261FA29b3F2784AF17874428b58d971b6652C47'
+  - name: ShareClassManager
+    address: '0xe88e712d60bfd23048Dbc677FEb44E2145F2cDf4'
+  - name: MultiAdapter
+    address: '0x457C91384C984b1659157160e8543adb12BC5317'
+  - name: PoolEscrowFactory
+    address: '0xD166B3210edBeEdEa73c7b2e8aB64BDd30c980E9'
+  - name: MerkleProofManagerFactory
+    address: '0xaBd3cDc17C15a9E7771876cE24aB10A8E722781d'
+  - name: OnOfframpManagerFactory
+    address: '0xcb084F79e8AE54e1373130F4F7119214FCe972a9'
+  - name: BatchRequestManager
+    address: '0xF06f89a1b6C601235729A689595571B7455dD433'
+    start_block: 362480836
+  - name: MultiAdapterV3_1
+    address: '0x35C837F0A54B715a23D193E1476BFC9BC30073BE'
+    start_block: 425757147
+  - name: VaultRegistry
+    address: '0xd9531AC47928c3386346f82d9A2478960bf2CA7B'
+    start_block: 362480836
+  - name: SyncMgr
+    address: '0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D'
+    start_block: 362480836
+  - name: Vault
+  - name: PoolEscrow
+  - name: OnOfframpManager
+  - name: MerkleProofManager
+  - name: TokenInstance
+  - name: HubRegistryV3_1
+    address: '0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93'
+    start_block: 425757109
+  - name: HubV3_1
+    address: '0xA4A7Bb3831958463b3FE3E27A6a160F764341953'
+    start_block: 425757109
+  - name: SpokeV3_1
+    address: '0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB'
+    start_block: 425757109
+  - name: GatewayV3_1
+    address: '0x19a524D03aA94ECEe41a80341537BCFCb47D3172'
+    start_block: 425757109
+  - name: BalanceSheetV3_1
+    address: '0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e'
+    start_block: 425757109
+  - name: HoldingsV3_1
+    address: '0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d'
+    start_block: 425757109
+  - name: ShareClassManagerV3_1
+    address: '0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf'
+    start_block: 425757109
+- id: 8453
+  start_block: 32901251
+  contracts:
+  - name: HubRegistry
+    address: '0x12044ef361Cc3446Cb7d36541C8411EE4e6f52cb'
+  - name: Hub
+    address: '0x9c8454A506263549f07c80698E276e3622077098'
+  - name: Spoke
+    address: '0xd30Da1d7F964E5f6C2D9fE2AAA97517F6B23FA2B'
+  - name: Gateway
+    address: '0x51eA340B3fe9059B48f935D5A80e127d587B6f89'
+  - name: BalanceSheet
+    address: '0xBcC8D02d409e439D98453C0b1ffa398dFFb31fda'
+  - name: Holdings
+    address: '0x0261FA29b3F2784AF17874428b58d971b6652C47'
+  - name: ShareClassManager
+    address: '0xe88e712d60bfd23048Dbc677FEb44E2145F2cDf4'
+  - name: MultiAdapter
+    address: '0x457C91384C984b1659157160e8543adb12BC5317'
+  - name: PoolEscrowFactory
+    address: '0xD166B3210edBeEdEa73c7b2e8aB64BDd30c980E9'
+  - name: MerkleProofManagerFactory
+    address: '0xaBd3cDc17C15a9E7771876cE24aB10A8E722781d'
+  - name: OnOfframpManagerFactory
+    address: '0xcb084F79e8AE54e1373130F4F7119214FCe972a9'
+  - name: BatchRequestManager
+    address: '0xF06f89a1b6C601235729A689595571B7455dD433'
+  - name: MultiAdapterV3_1
+    address: '0x35C837F0A54B715a23D193E1476BFC9BC30073BE'
+    start_block: 41362303
+  - name: VaultRegistry
+    address: '0xd9531AC47928c3386346f82d9A2478960bf2CA7B'
+  - name: SyncMgr
+    address: '0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D'
+  - name: Vault
+  - name: PoolEscrow
+  - name: OnOfframpManager
+  - name: MerkleProofManager
+  - name: TokenInstance
+  - name: HubRegistryV3_1
+    address: '0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93'
+    start_block: 41362298
+  - name: HubV3_1
+    address: '0xA4A7Bb3831958463b3FE3E27A6a160F764341953'
+    start_block: 41362298
+  - name: SpokeV3_1
+    address: '0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB'
+    start_block: 41362298
+  - name: GatewayV3_1
+    address: '0x19a524D03aA94ECEe41a80341537BCFCb47D3172'
+    start_block: 41362298
+  - name: BalanceSheetV3_1
+    address: '0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e'
+    start_block: 41362298
+  - name: HoldingsV3_1
+    address: '0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d'
+    start_block: 41362298
+  - name: ShareClassManagerV3_1
+    address: '0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf'
+    start_block: 41362298
+- id: 43114
+  start_block: 65492900
+  contracts:
+  - name: HubRegistry
+    address: '0x12044ef361Cc3446Cb7d36541C8411EE4e6f52cb'
+  - name: Hub
+    address: '0x9c8454A506263549f07c80698E276e3622077098'
+  - name: Spoke
+    address: '0xd30Da1d7F964E5f6C2D9fE2AAA97517F6B23FA2B'
+  - name: Gateway
+    address: '0x51eA340B3fe9059B48f935D5A80e127d587B6f89'
+  - name: BalanceSheet
+    address: '0xBcC8D02d409e439D98453C0b1ffa398dFFb31fda'
+  - name: Holdings
+    address: '0x0261FA29b3F2784AF17874428b58d971b6652C47'
+  - name: ShareClassManager
+    address: '0xe88e712d60bfd23048Dbc677FEb44E2145F2cDf4'
+  - name: MultiAdapter
+    address: '0x457C91384C984b1659157160e8543adb12BC5317'
+  - name: PoolEscrowFactory
+    address: '0xD166B3210edBeEdEa73c7b2e8aB64BDd30c980E9'
+  - name: MerkleProofManagerFactory
+    address: '0xaBd3cDc17C15a9E7771876cE24aB10A8E722781d'
+  - name: OnOfframpManagerFactory
+    address: '0xcb084F79e8AE54e1373130F4F7119214FCe972a9'
+  - name: BatchRequestManager
+    address: '0xF06f89a1b6C601235729A689595571B7455dD433'
+    start_block: 66198180
+  - name: MultiAdapterV3_1
+    address: '0x35C837F0A54B715a23D193E1476BFC9BC30073BE'
+    start_block: 76719850
+  - name: VaultRegistry
+    address: '0xd9531AC47928c3386346f82d9A2478960bf2CA7B'
+    start_block: 66198180
+  - name: SyncMgr
+    address: '0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D'
+    start_block: 66198180
+  - name: Vault
+  - name: PoolEscrow
+  - name: OnOfframpManager
+  - name: MerkleProofManager
+  - name: TokenInstance
+  - name: HubRegistryV3_1
+    address: '0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93'
+    start_block: 76719845
+  - name: HubV3_1
+    address: '0xA4A7Bb3831958463b3FE3E27A6a160F764341953'
+    start_block: 76719845
+  - name: SpokeV3_1
+    address: '0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB'
+    start_block: 76719845
+  - name: GatewayV3_1
+    address: '0x19a524D03aA94ECEe41a80341537BCFCb47D3172'
+    start_block: 76719845
+  - name: BalanceSheetV3_1
+    address: '0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e'
+    start_block: 76719845
+  - name: HoldingsV3_1
+    address: '0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d'
+    start_block: 76719845
+  - name: ShareClassManagerV3_1
+    address: '0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf'
+    start_block: 76719845
+- id: 56
+  start_block: 54800894
+  contracts:
+  - name: HubRegistry
+    address: '0x12044ef361Cc3446Cb7d36541C8411EE4e6f52cb'
+  - name: Hub
+    address: '0x9c8454A506263549f07c80698E276e3622077098'
+  - name: Spoke
+    address: '0xd30Da1d7F964E5f6C2D9fE2AAA97517F6B23FA2B'
+  - name: Gateway
+    address: '0x51eA340B3fe9059B48f935D5A80e127d587B6f89'
+  - name: BalanceSheet
+    address: '0xBcC8D02d409e439D98453C0b1ffa398dFFb31fda'
+  - name: Holdings
+    address: '0x0261FA29b3F2784AF17874428b58d971b6652C47'
+  - name: ShareClassManager
+    address: '0xe88e712d60bfd23048Dbc677FEb44E2145F2cDf4'
+  - name: MultiAdapter
+    address: '0x457C91384C984b1659157160e8543adb12BC5317'
+  - name: PoolEscrowFactory
+    address: '0xD166B3210edBeEdEa73c7b2e8aB64BDd30c980E9'
+  - name: MerkleProofManagerFactory
+    address: '0xaBd3cDc17C15a9E7771876cE24aB10A8E722781d'
+  - name: OnOfframpManagerFactory
+    address: '0xcb084F79e8AE54e1373130F4F7119214FCe972a9'
+  - name: BatchRequestManager
+    address: '0xF06f89a1b6C601235729A689595571B7455dD433'
+  - name: MultiAdapterV3_1
+    address: '0x35C837F0A54B715a23D193E1476BFC9BC30073BE'
+    start_block: 77734419
+  - name: VaultRegistry
+    address: '0xd9531AC47928c3386346f82d9A2478960bf2CA7B'
+  - name: SyncMgr
+    address: '0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D'
+  - name: Vault
+  - name: PoolEscrow
+  - name: OnOfframpManager
+  - name: MerkleProofManager
+  - name: TokenInstance
+  - name: HubRegistryV3_1
+    address: '0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93'
+    start_block: 77734397
+  - name: HubV3_1
+    address: '0xA4A7Bb3831958463b3FE3E27A6a160F764341953'
+    start_block: 77734397
+  - name: SpokeV3_1
+    address: '0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB'
+    start_block: 77734397
+  - name: GatewayV3_1
+    address: '0x19a524D03aA94ECEe41a80341537BCFCb47D3172'
+    start_block: 77734397
+  - name: BalanceSheetV3_1
+    address: '0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e'
+    start_block: 77734397
+  - name: HoldingsV3_1
+    address: '0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d'
+    start_block: 77734397
+  - name: ShareClassManagerV3_1
+    address: '0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf'
+    start_block: 77734397
+- id: 98866
+  start_block: 11931870
+  contracts:
+  - name: HubRegistry
+    address: '0x12044ef361Cc3446Cb7d36541C8411EE4e6f52cb'
+  - name: Hub
+    address: '0x9c8454A506263549f07c80698E276e3622077098'
+  - name: Spoke
+    address: '0xd30Da1d7F964E5f6C2D9fE2AAA97517F6B23FA2B'
+  - name: Gateway
+    address: '0x51eA340B3fe9059B48f935D5A80e127d587B6f89'
+  - name: BalanceSheet
+    address: '0xBcC8D02d409e439D98453C0b1ffa398dFFb31fda'
+  - name: Holdings
+    address: '0x0261FA29b3F2784AF17874428b58d971b6652C47'
+  - name: ShareClassManager
+    address: '0xe88e712d60bfd23048Dbc677FEb44E2145F2cDf4'
+  - name: MultiAdapter
+    address: '0x457C91384C984b1659157160e8543adb12BC5317'
+  - name: PoolEscrowFactory
+    address: '0xD166B3210edBeEdEa73c7b2e8aB64BDd30c980E9'
+  - name: MerkleProofManagerFactory
+    address: '0xaBd3cDc17C15a9E7771876cE24aB10A8E722781d'
+  - name: OnOfframpManagerFactory
+    address: '0xcb084F79e8AE54e1373130F4F7119214FCe972a9'
+  - name: BatchRequestManager
+    address: '0xF06f89a1b6C601235729A689595571B7455dD433'
+    start_block: 15794381
+  - name: MultiAdapterV3_1
+    address: '0x35C837F0A54B715a23D193E1476BFC9BC30073BE'
+    start_block: 48513023
+  - name: VaultRegistry
+    address: '0xd9531AC47928c3386346f82d9A2478960bf2CA7B'
+    start_block: 15794381
+  - name: SyncMgr
+    address: '0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D'
+    start_block: 15794381
+  - name: Vault
+  - name: PoolEscrow
+  - name: OnOfframpManager
+  - name: MerkleProofManager
+  - name: TokenInstance
+  - name: HubRegistryV3_1
+    address: '0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93'
+    start_block: 48512998
+  - name: HubV3_1
+    address: '0xA4A7Bb3831958463b3FE3E27A6a160F764341953'
+    start_block: 48512998
+  - name: SpokeV3_1
+    address: '0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB'
+    start_block: 48512998
+  - name: GatewayV3_1
+    address: '0x19a524D03aA94ECEe41a80341537BCFCb47D3172'
+    start_block: 48512998
+  - name: BalanceSheetV3_1
+    address: '0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e'
+    start_block: 48512998
+  - name: HoldingsV3_1
+    address: '0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d'
+    start_block: 48512998
+  - name: ShareClassManagerV3_1
+    address: '0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf'
+    start_block: 48512998
+- id: 10
+  start_block: 147002472
+  contracts:
+  - name: HubRegistry
+    address: '0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93'
+  - name: Hub
+    address: '0xA4A7Bb3831958463b3FE3E27A6a160F764341953'
+  - name: Spoke
+    address: '0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB'
+  - name: Gateway
+    address: '0x19a524D03aA94ECEe41a80341537BCFCb47D3172'
+  - name: BalanceSheet
+    address: '0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e'
+  - name: Holdings
+    address: '0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d'
+  - name: ShareClassManager
+    address: '0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf'
+  - name: MultiAdapterV3_1
+    address: '0x35C837F0A54B715a23D193E1476BFC9BC30073BE'
+  - name: PoolEscrowFactory
+    address: '0x5187A505c485E22f0b8a5FBdF69eF1c29C478CE3'
+  - name: MerkleProofManagerFactory
+    address: '0xc5243bdEa2d86eA7541AC69084dF3EDdc137a18b'
+  - name: OnOfframpManagerFactory
+    address: '0x2539e60B0B50D7BD004A09e9D2b7E8c86EB0AaF6'
+  - name: BatchRequestManager
+    address: '0xc52Bd1Bdfa0135147D3F01a0B6D6cd0A831dFe77'
+  - name: VaultRegistry
+    address: '0xd9531AC47928c3386346f82d9A2478960bf2CA7B'
+  - name: SyncMgr
+    address: '0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D'
+  - name: Vault
+  - name: PoolEscrow
+  - name: OnOfframpManager
+  - name: MerkleProofManager
+  - name: TokenInstance
+- id: 999
+  start_block: 25782445
+  contracts:
+  - name: HubRegistry
+    address: '0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93'
+  - name: Hub
+    address: '0xA4A7Bb3831958463b3FE3E27A6a160F764341953'
+  - name: Spoke
+    address: '0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB'
+  - name: Gateway
+    address: '0x19a524D03aA94ECEe41a80341537BCFCb47D3172'
+  - name: BalanceSheet
+    address: '0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e'
+  - name: Holdings
+    address: '0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d'
+  - name: ShareClassManager
+    address: '0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf'
+  - name: MultiAdapterV3_1
+    address: '0x35C837F0A54B715a23D193E1476BFC9BC30073BE'
+  - name: PoolEscrowFactory
+    address: '0x5187A505c485E22f0b8a5FBdF69eF1c29C478CE3'
+  - name: MerkleProofManagerFactory
+    address: '0xc5243bdEa2d86eA7541AC69084dF3EDdc137a18b'
+  - name: OnOfframpManagerFactory
+    address: '0x2539e60B0B50D7BD004A09e9D2b7E8c86EB0AaF6'
+  - name: BatchRequestManager
+    address: '0xc52Bd1Bdfa0135147D3F01a0B6D6cd0A831dFe77'
+  - name: VaultRegistry
+    address: '0xd9531AC47928c3386346f82d9A2478960bf2CA7B'
+  - name: SyncMgr
+    address: '0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D'
+  - name: Vault
+  - name: PoolEscrow
+  - name: OnOfframpManager
+  - name: MerkleProofManager
+  - name: TokenInstance
+- id: 143
+  start_block: 51882383
+  contracts:
+  - name: HubRegistry
+    address: '0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93'
+  - name: Hub
+    address: '0xA4A7Bb3831958463b3FE3E27A6a160F764341953'
+  - name: Spoke
+    address: '0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB'
+  - name: Gateway
+    address: '0x19a524D03aA94ECEe41a80341537BCFCb47D3172'
+  - name: BalanceSheet
+    address: '0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e'
+  - name: Holdings
+    address: '0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d'
+  - name: ShareClassManager
+    address: '0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf'
+  - name: MultiAdapterV3_1
+    address: '0x35C837F0A54B715a23D193E1476BFC9BC30073BE'
+  - name: PoolEscrowFactory
+    address: '0x5187A505c485E22f0b8a5FBdF69eF1c29C478CE3'
+  - name: MerkleProofManagerFactory
+    address: '0xc5243bdEa2d86eA7541AC69084dF3EDdc137a18b'
+  - name: OnOfframpManagerFactory
+    address: '0x2539e60B0B50D7BD004A09e9D2b7E8c86EB0AaF6'
+  - name: BatchRequestManager
+    address: '0xc52Bd1Bdfa0135147D3F01a0B6D6cd0A831dFe77'
+  - name: VaultRegistry
+    address: '0xd9531AC47928c3386346f82d9A2478960bf2CA7B'
+  - name: SyncMgr
+    address: '0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D'
+  - name: Vault
+  - name: PoolEscrow
+  - name: OnOfframpManager
+  - name: MerkleProofManager
+  - name: TokenInstance
