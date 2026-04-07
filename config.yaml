@@ -164,6 +164,165 @@ contracts:
       - event: "SetMaxReserve(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256 tokenId, uint128 maxReserve)"
 
   # ==========================================================================
+  # V3.1 Singleton Contracts (same events, different addresses on original chains)
+  # ==========================================================================
+
+  - name: HubRegistryV3_1
+    abi_file_path: abis/HubRegistry.json
+    handler: src/handlers/HubRegistry.ts
+    events:
+      - event: "NewPool(uint64 poolId, address indexed manager, uint128 indexed currency)"
+        name: "V3_1NewPool"
+      - event: "NewAsset(uint128 indexed assetId, uint8 decimals)"
+        name: "V3_1NewAsset"
+      - event: "UpdateCurrency(uint64 indexed poolId, uint128 currency)"
+        name: "V3_1UpdateCurrency"
+      - event: "UpdateManager(uint64 indexed poolId, address indexed manager, bool canManage)"
+        name: "V3_1UpdateManager"
+      - event: "SetMetadata(uint64 indexed poolId, bytes metadata)"
+        name: "V3_1SetMetadata"
+
+  - name: HubV3_1
+    abi_file_path: abis/Hub.json
+    handler: src/handlers/Hub.ts
+    events:
+      - event: "NotifyPool(uint16 indexed centrifugeId, uint64 indexed poolId)"
+        name: "V3_1NotifyPool"
+      - event: "NotifyShareClass(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId)"
+        name: "V3_1NotifyShareClass"
+      - event: "NotifyShareMetadata(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, string name, string symbol)"
+        name: "V3_1NotifyShareMetadata"
+      - event: "NotifySharePrice(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, uint128 poolPerShare)"
+        name: "V3_1NotifySharePrice"
+      - event: "NotifyAssetPrice(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, uint128 assetId, uint128 pricePoolPerAsset)"
+        name: "V3_1NotifyAssetPrice"
+      - event: "UpdateVault(uint64 indexed poolId, bytes16 scId, uint128 assetId, bytes32 vaultOrFactory, uint8 kind)"
+        name: "V3_1UpdateVault"
+      - event: "UpdateRestriction(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, bytes payload)"
+        name: "V3_1UpdateRestriction"
+      - event: "UpdateShareHook(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, bytes32 hook)"
+        name: "V3_1UpdateShareHook"
+      - event: "ForwardTransferShares(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, bytes32 receiver, uint128 amount)"
+        name: "V3_1ForwardTransferShares"
+      - event: "UpdateContract(uint16 centrifugeId, uint64 poolId, bytes16 scId, bytes32 target, bytes payload)"
+        name: "V3_1UpdateContract"
+
+  - name: SpokeV3_1
+    abi_file_path: abis/Spoke.json
+    handler: src/handlers/Spoke.ts
+    events:
+      - event: "AddPool(uint64 indexed poolId)"
+        name: "V3_1AddPool"
+      - event: "AddShareClass(uint64 indexed poolId, bytes16 indexed scId, address token)"
+        name: "V3_1AddShareClass"
+      - event: "DeployVault(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, address factory, address vault, uint8 kind)"
+        name: "V3_1DeployVault"
+      - event: "RegisterAsset(uint128 indexed assetId, address indexed asset, uint256 indexed tokenId, string name, string symbol, uint8 decimals, bool isInitialization)"
+        name: "V3_1RegisterAsset"
+      - event: "UpdateSharePrice(uint64 indexed poolId, bytes16 indexed scId, uint256 price, uint64 computedAt)"
+        name: "V3_1UpdateSharePrice"
+      - event: "UpdateAssetPrice(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, uint256 price, uint64 computedAt)"
+        name: "V3_1UpdateAssetPrice"
+      - event: "LinkVault(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, address vault)"
+        name: "V3_1LinkVault"
+      - event: "UnlinkVault(uint64 indexed poolId, bytes16 indexed scId, address indexed asset, uint256 tokenId, address vault)"
+        name: "V3_1UnlinkVault"
+      - event: "InitiateTransferShares(uint16 centrifugeId, uint64 indexed poolId, bytes16 indexed scId, address indexed sender, bytes32 destinationAddress, uint128 amount)"
+        name: "V3_1InitiateTransferShares"
+      - event: "ExecuteTransferShares(uint64 indexed poolId, bytes16 indexed scId, address indexed receiver, uint128 amount)"
+        name: "V3_1ExecuteTransferShares"
+      - event: "SetRequestManager(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, address manager)"
+        name: "V3_1SetRequestManager"
+
+  - name: GatewayV3_1
+    abi_file_path: abis/Gateway.json
+    handler: src/handlers/Gateway.ts
+    events:
+      - event: "PrepareMessage(uint16 indexed centrifugeId, uint64 poolId, bytes message)"
+        name: "V3_1PrepareMessage"
+      - event: "ExecuteMessage(uint16 indexed centrifugeId, bytes message)"
+        name: "V3_1ExecuteMessage"
+      - event: "FailMessage(uint16 indexed centrifugeId, bytes message, bytes error)"
+        name: "V3_1FailMessage"
+      - event: "UnderpaidBatch(uint16 indexed centrifugeId, bytes batch)"
+        name: "V3_1UnderpaidBatch"
+      - event: "RepayBatch(uint16 indexed centrifugeId, bytes batch)"
+        name: "V3_1RepayBatch"
+
+  - name: BalanceSheetV3_1
+    abi_file_path: abis/BalanceSheet.json
+    handler: src/handlers/BalanceSheet.ts
+    events:
+      - event: "Deposit(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256 tokenId, uint128 amount)"
+        name: "V3_1Deposit"
+      - event: "Withdraw(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256 tokenId, address receiver, uint128 amount, uint128 pricePoolPerAsset)"
+        name: "V3_1Withdraw"
+      - event: "NoteDeposit(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256 tokenId, uint128 amount, uint128 pricePoolPerAsset)"
+        name: "V3_1NoteDeposit"
+      - event: "Issue(uint64 indexed poolId, bytes16 indexed scId, address to, uint128 pricePoolPerShare, uint128 shares)"
+        name: "V3_1Issue"
+      - event: "Revoke(uint64 indexed poolId, bytes16 indexed scId, address from, uint128 pricePoolPerShare, uint128 shares)"
+        name: "V3_1Revoke"
+      - event: "UpdateManager(uint64 indexed poolId, address who, bool canManage)"
+        name: "V3_1BSUpdateManager"
+      - event: "TransferSharesFrom(uint64 indexed poolId, bytes16 indexed scId, address sender, address indexed from, address to, uint256 amount)"
+        name: "V3_1TransferSharesFrom"
+
+  - name: HoldingsV3_1
+    abi_file_path: abis/Holdings.json
+    handler: src/handlers/Holdings.ts
+    events:
+      - event: "Initialize(uint64 indexed, bytes16 scId, uint128 indexed assetId, address valuation, bool isLiability, (uint32,uint8)[] accounts)"
+        name: "V3_1Initialize"
+      - event: "Increase(uint64 indexed, bytes16 scId, uint128 indexed assetId, uint128 pricePoolPerAsset, uint128 amount, uint128 increasedValue)"
+        name: "V3_1Increase"
+      - event: "Decrease(uint64 indexed, bytes16 scId, uint128 indexed assetId, uint128 pricePoolPerAsset, uint128 amount, uint128 decreasedValue)"
+        name: "V3_1Decrease"
+      - event: "Update(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, bool isPositive, uint128 diffValue)"
+        name: "V3_1Update"
+      - event: "UpdateValuation(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, address valuation)"
+        name: "V3_1UpdateValuation"
+      - event: "UpdateIsLiability(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, bool isLiability)"
+        name: "V3_1UpdateIsLiability"
+      - event: "SetAccountId(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, uint8 kind, uint32 accountId)"
+        name: "V3_1SetAccountId"
+
+  - name: ShareClassManagerV3_1
+    abi_file_path: abis/ShareClassManager.json
+    handler: src/handlers/ShareClassManager.ts
+    events:
+      - event: "AddShareClass(uint64 indexed poolId, bytes16 indexed scId, uint32 indexed index, string name, string symbol, bytes32 salt)"
+        name: "V3_1AddShareClassLong"
+      - event: "AddShareClass(uint64 indexed poolId, bytes16 indexed scId, uint32 indexed index)"
+        name: "V3_1AddShareClassShort"
+      - event: "UpdateMetadata(uint64 indexed poolId, bytes16 indexed scId, string name, string symbol)"
+        name: "V3_1UpdateMetadata"
+      - event: "UpdateShareClass(uint64 indexed poolId, bytes16 indexed scId, uint128 navPoolPerShare)"
+        name: "V3_1UpdateShareClass"
+      - event: "UpdatePricePoolPerShare(uint64 indexed poolId, bytes16 indexed scId, uint128 price, uint64 computedAt)"
+        name: "V3_1UpdatePricePoolPerShare"
+      - event: "UpdateDepositRequest(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed depositAssetId, uint32 epoch, bytes32 investor, uint128 pendingUserAssetAmount, uint128 pendingTotalAssetAmount, uint128 queuedUserAssetAmount, bool pendingCancellation)"
+        name: "V3_1UpdateDepositRequest"
+      - event: "UpdateRedeemRequest(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed payoutAssetId, uint32 epoch, bytes32 investor, uint128 pendingUserShareAmount, uint128 pendingTotalShareAmount, uint128 queuedUserShareAmount, bool pendingCancellation)"
+        name: "V3_1UpdateRedeemRequest"
+      - event: "ApproveDeposits(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed depositAssetId, uint32 epoch, uint128 approvedPoolAmount, uint128 approvedAssetAmount, uint128 pendingAssetAmount)"
+        name: "V3_1ApproveDeposits"
+      - event: "ApproveRedeems(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed payoutAssetId, uint32 epoch, uint128 approvedShareAmount, uint128 pendingShareAmount)"
+        name: "V3_1ApproveRedeems"
+      - event: "IssueShares(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed depositAssetId, uint32 epoch, uint128 navPoolPerShare, uint128 navAssetPerShare, uint128 issuedShareAmount)"
+        name: "V3_1IssueShares"
+      - event: "RevokeShares(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed payoutAssetId, uint32 epoch, uint128 navPoolPerShare, uint128 navAssetPerShare, uint128 revokedShareAmount, uint128 revokedAssetAmount, uint128 revokedPoolAmount)"
+        name: "V3_1RevokeShares"
+      - event: "ClaimDeposit(uint64 indexed poolId, bytes16 indexed scId, uint32 epoch, bytes32 investor, uint128 indexed depositAssetId, uint128 paymentAssetAmount, uint128 pendingAssetAmount, uint128 claimedShareAmount, uint64 issuedAt)"
+        name: "V3_1ClaimDeposit"
+      - event: "ClaimRedeem(uint64 indexed poolId, bytes16 indexed scId, uint32 epoch, bytes32 investor, uint128 indexed payoutAssetId, uint128 paymentShareAmount, uint128 pendingShareAmount, uint128 claimedAssetAmount, uint64 revokedAt)"
+        name: "V3_1ClaimRedeem"
+      - event: "RemoteIssueShares(uint16 centrifugeId, uint64 indexed poolId, bytes16 indexed scId, uint128 issuedShareAmount)"
+        name: "V3_1RemoteIssueShares"
+      - event: "RemoteRevokeShares(uint16 centrifugeId, uint64 indexed poolId, bytes16 indexed scId, uint128 revokedShareAmount)"
+        name: "V3_1RemoteRevokeShares"
+
+  # ==========================================================================
   # Factory-Deployed Contracts (dynamically registered via contractRegister)
   # ==========================================================================
 
@@ -260,6 +419,132 @@ chains:
       - name: MultiAdapterV3_1
         address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
         start_block: 24319304
+      - name: HubRegistryV3_1
+        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
+        start_block: 24319303
+      - name: HubV3_1
+        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
+        start_block: 24319303
+      - name: SpokeV3_1
+        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
+        start_block: 24319303
+      - name: GatewayV3_1
+        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
+        start_block: 24319303
+      - name: BalanceSheetV3_1
+        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
+        start_block: 24319303
+      - name: HoldingsV3_1
+        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
+        start_block: 24319303
+      - name: ShareClassManagerV3_1
+        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
+        start_block: 24319303
+      - name: HubRegistryV3_1
+        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
+        start_block: 425757109
+      - name: HubV3_1
+        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
+        start_block: 425757109
+      - name: SpokeV3_1
+        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
+        start_block: 425757109
+      - name: GatewayV3_1
+        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
+        start_block: 425757109
+      - name: BalanceSheetV3_1
+        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
+        start_block: 425757109
+      - name: HoldingsV3_1
+        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
+        start_block: 425757109
+      - name: ShareClassManagerV3_1
+        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
+        start_block: 425757109
+      - name: HubRegistryV3_1
+        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
+        start_block: 41362298
+      - name: HubV3_1
+        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
+        start_block: 41362298
+      - name: SpokeV3_1
+        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
+        start_block: 41362298
+      - name: GatewayV3_1
+        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
+        start_block: 41362298
+      - name: BalanceSheetV3_1
+        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
+        start_block: 41362298
+      - name: HoldingsV3_1
+        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
+        start_block: 41362298
+      - name: ShareClassManagerV3_1
+        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
+        start_block: 41362298
+      - name: HubRegistryV3_1
+        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
+        start_block: 76719845
+      - name: HubV3_1
+        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
+        start_block: 76719845
+      - name: SpokeV3_1
+        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
+        start_block: 76719845
+      - name: GatewayV3_1
+        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
+        start_block: 76719845
+      - name: BalanceSheetV3_1
+        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
+        start_block: 76719845
+      - name: HoldingsV3_1
+        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
+        start_block: 76719845
+      - name: ShareClassManagerV3_1
+        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
+        start_block: 76719845
+      - name: HubRegistryV3_1
+        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
+        start_block: 77734397
+      - name: HubV3_1
+        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
+        start_block: 77734397
+      - name: SpokeV3_1
+        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
+        start_block: 77734397
+      - name: GatewayV3_1
+        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
+        start_block: 77734397
+      - name: BalanceSheetV3_1
+        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
+        start_block: 77734397
+      - name: HoldingsV3_1
+        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
+        start_block: 77734397
+      - name: ShareClassManagerV3_1
+        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
+        start_block: 77734397
+      - name: HubRegistryV3_1
+        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
+        start_block: 48512998
+      - name: HubV3_1
+        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
+        start_block: 48512998
+      - name: SpokeV3_1
+        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
+        start_block: 48512998
+      - name: GatewayV3_1
+        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
+        start_block: 48512998
+      - name: BalanceSheetV3_1
+        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
+        start_block: 48512998
+      - name: HoldingsV3_1
+        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
+        start_block: 48512998
+      - name: ShareClassManagerV3_1
+        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
+        start_block: 48512998
       - name: VaultRegistry
         address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
         start_block: 22996635

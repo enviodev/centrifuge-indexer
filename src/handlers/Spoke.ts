@@ -1,4 +1,4 @@
-import { Spoke } from "generated";
+import { Spoke, SpokeV3_1 } from "generated";
 import { getCentrifugeId, networkNames, explorerUrls, chainIcons } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import {
@@ -339,3 +339,19 @@ Spoke.SetRequestManager.handler(async ({ event, context }) => {
   // Informational: tracks which request manager is set for a pool/token/asset.
   // The BatchRequestManager contract handles the actual request events.
 });
+
+// === V3.1 Handler Registrations (delegates to V3 logic) ===
+
+SpokeV3_1.V3_1AddShareClass.contractRegister(Spoke.AddShareClass.contractRegister as any);
+SpokeV3_1.V3_1DeployVault.contractRegister(Spoke.DeployVault.contractRegister as any);
+SpokeV3_1.V3_1AddPool.handler(Spoke.AddPool.handler as any);
+SpokeV3_1.V3_1RegisterAsset.handler(Spoke.RegisterAsset.handler as any);
+SpokeV3_1.V3_1AddShareClass.handler(Spoke.AddShareClass.handler as any);
+SpokeV3_1.V3_1DeployVault.handler(Spoke.DeployVault.handler as any);
+SpokeV3_1.V3_1UpdateSharePrice.handler(Spoke.UpdateSharePrice.handler as any);
+SpokeV3_1.V3_1UpdateAssetPrice.handler(Spoke.UpdateAssetPrice.handler as any);
+SpokeV3_1.V3_1LinkVault.handler(Spoke.LinkVault.handler as any);
+SpokeV3_1.V3_1UnlinkVault.handler(Spoke.UnlinkVault.handler as any);
+SpokeV3_1.V3_1InitiateTransferShares.handler(Spoke.InitiateTransferShares.handler as any);
+SpokeV3_1.V3_1ExecuteTransferShares.handler(Spoke.ExecuteTransferShares.handler as any);
+SpokeV3_1.V3_1SetRequestManager.handler(Spoke.SetRequestManager.handler as any);

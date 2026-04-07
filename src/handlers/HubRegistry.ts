@@ -1,4 +1,4 @@
-import { HubRegistry } from "generated";
+import { HubRegistry, HubRegistryV3_1 } from "generated";
 import "./Snapshots"; // Side-effect import — registers onBlock handlers
 import { getCentrifugeId, networkNames, explorerUrls, chainIcons, GLOBAL_ESCROW_ADDRESS } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
@@ -217,3 +217,11 @@ HubRegistry.SetMetadata.handler(async ({ event, context }) => {
     ...updatedDefaults(event),
   });
 });
+
+// === V3.1 Handler Registrations (delegates to V3 logic) ===
+
+HubRegistryV3_1.V3_1NewPool.handler(HubRegistry.NewPool.handler as any);
+HubRegistryV3_1.V3_1NewAsset.handler(HubRegistry.NewAsset.handler as any);
+HubRegistryV3_1.V3_1UpdateCurrency.handler(HubRegistry.UpdateCurrency.handler as any);
+HubRegistryV3_1.V3_1UpdateManager.handler(HubRegistry.UpdateManager.handler as any);
+HubRegistryV3_1.V3_1SetMetadata.handler(HubRegistry.SetMetadata.handler as any);

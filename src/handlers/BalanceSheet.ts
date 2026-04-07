@@ -1,4 +1,4 @@
-import { BalanceSheet } from "generated";
+import { BalanceSheet, BalanceSheetV3_1 } from "generated";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import {
@@ -397,3 +397,13 @@ BalanceSheet.TransferSharesFrom.handler(async ({ event, context }) => {
     ...createdDefaults(event),
   });
 });
+
+// === V3.1 Handler Registrations (delegates to V3 logic) ===
+
+BalanceSheetV3_1.V3_1NoteDeposit.handler(BalanceSheet.NoteDeposit.handler as any);
+BalanceSheetV3_1.V3_1Withdraw.handler(BalanceSheet.Withdraw.handler as any);
+BalanceSheetV3_1.V3_1BSUpdateManager.handler(BalanceSheet.UpdateManager.handler as any);
+BalanceSheetV3_1.V3_1Deposit.handler(BalanceSheet.Deposit.handler as any);
+BalanceSheetV3_1.V3_1Issue.handler(BalanceSheet.Issue.handler as any);
+BalanceSheetV3_1.V3_1Revoke.handler(BalanceSheet.Revoke.handler as any);
+BalanceSheetV3_1.V3_1TransferSharesFrom.handler(BalanceSheet.TransferSharesFrom.handler as any);

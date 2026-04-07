@@ -1,4 +1,4 @@
-import { ShareClassManager } from "generated";
+import { ShareClassManager, ShareClassManagerV3_1 } from "generated";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import { tokenId as tokenIdFn, blockchainId, holdingEscrowId, snapshotId, normalizeScId } from "../utils/ids";
@@ -326,3 +326,21 @@ ShareClassManager.RemoteRevokeShares.handler(async ({ event, context }) => {
     ...updatedDefaults(event),
   });
 });
+
+// === V3.1 Handler Registrations (delegates to V3 logic) ===
+
+ShareClassManagerV3_1.V3_1AddShareClassLong.handler(ShareClassManager.AddShareClassLong.handler as any);
+ShareClassManagerV3_1.V3_1AddShareClassShort.handler(ShareClassManager.AddShareClassShort.handler as any);
+ShareClassManagerV3_1.V3_1UpdateMetadata.handler(ShareClassManager.UpdateMetadata.handler as any);
+ShareClassManagerV3_1.V3_1UpdateShareClass.handler(ShareClassManager.UpdateShareClass.handler as any);
+ShareClassManagerV3_1.V3_1UpdatePricePoolPerShare.handler(ShareClassManager.UpdatePricePoolPerShare.handler as any);
+ShareClassManagerV3_1.V3_1UpdateDepositRequest.handler(ShareClassManager.UpdateDepositRequest.handler as any);
+ShareClassManagerV3_1.V3_1UpdateRedeemRequest.handler(ShareClassManager.UpdateRedeemRequest.handler as any);
+ShareClassManagerV3_1.V3_1ApproveDeposits.handler(ShareClassManager.ApproveDeposits.handler as any);
+ShareClassManagerV3_1.V3_1ApproveRedeems.handler(ShareClassManager.ApproveRedeems.handler as any);
+ShareClassManagerV3_1.V3_1IssueShares.handler(ShareClassManager.IssueShares.handler as any);
+ShareClassManagerV3_1.V3_1RevokeShares.handler(ShareClassManager.RevokeShares.handler as any);
+ShareClassManagerV3_1.V3_1ClaimDeposit.handler(ShareClassManager.ClaimDeposit.handler as any);
+ShareClassManagerV3_1.V3_1ClaimRedeem.handler(ShareClassManager.ClaimRedeem.handler as any);
+ShareClassManagerV3_1.V3_1RemoteIssueShares.handler(ShareClassManager.RemoteIssueShares.handler as any);
+ShareClassManagerV3_1.V3_1RemoteRevokeShares.handler(ShareClassManager.RemoteRevokeShares.handler as any);

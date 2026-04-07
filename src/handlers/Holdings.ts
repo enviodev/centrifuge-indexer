@@ -1,4 +1,4 @@
-import { Holdings } from "generated";
+import { Holdings, HoldingsV3_1 } from "generated";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import { holdingId, holdingAccountId, blockchainId, tokenId as tokenIdFn, normalizeScId } from "../utils/ids";
@@ -265,3 +265,13 @@ Holdings.SetAccountId.handler(async ({ event, context }) => {
     ...createdDefaults(event),
   });
 });
+
+// === V3.1 Handler Registrations (delegates to V3 logic) ===
+
+HoldingsV3_1.V3_1Initialize.handler(Holdings.Initialize.handler as any);
+HoldingsV3_1.V3_1Increase.handler(Holdings.Increase.handler as any);
+HoldingsV3_1.V3_1Decrease.handler(Holdings.Decrease.handler as any);
+HoldingsV3_1.V3_1Update.handler(Holdings.Update.handler as any);
+HoldingsV3_1.V3_1UpdateValuation.handler(Holdings.UpdateValuation.handler as any);
+HoldingsV3_1.V3_1UpdateIsLiability.handler(Holdings.UpdateIsLiability.handler as any);
+HoldingsV3_1.V3_1SetAccountId.handler(Holdings.SetAccountId.handler as any);

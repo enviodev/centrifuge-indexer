@@ -1,4 +1,4 @@
-import { Gateway } from "generated";
+import { Gateway, GatewayV3_1 } from "generated";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults } from "../utils/defaults";
 import {
@@ -371,3 +371,11 @@ Gateway.FailMessage.handler(async ({ event, context }) => {
     status: "PartiallyFailed",
   });
 });
+
+// === V3.1 Handler Registrations (delegates to V3 logic) ===
+
+GatewayV3_1.V3_1PrepareMessage.handler(Gateway.PrepareMessage.handler as any);
+GatewayV3_1.V3_1ExecuteMessage.handler(Gateway.ExecuteMessage.handler as any);
+GatewayV3_1.V3_1FailMessage.handler(Gateway.FailMessage.handler as any);
+GatewayV3_1.V3_1UnderpaidBatch.handler(Gateway.UnderpaidBatch.handler as any);
+GatewayV3_1.V3_1RepayBatch.handler(Gateway.RepayBatch.handler as any);

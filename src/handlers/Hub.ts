@@ -1,4 +1,4 @@
-import { Hub } from "generated";
+import { Hub, HubV3_1 } from "generated";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import {
   poolSpokeBlockchainId,
@@ -363,3 +363,16 @@ Hub.ForwardTransferShares.handler(async ({ event, context }) => {
     ...createdDefaults(event),
   });
 });
+
+// === V3.1 Handler Registrations (delegates to V3 logic) ===
+
+HubV3_1.V3_1NotifyPool.handler(Hub.NotifyPool.handler as any);
+HubV3_1.V3_1UpdateRestriction.handler(Hub.UpdateRestriction.handler as any);
+HubV3_1.V3_1NotifySharePrice.handler(Hub.NotifySharePrice.handler as any);
+HubV3_1.V3_1NotifyAssetPrice.handler(Hub.NotifyAssetPrice.handler as any);
+HubV3_1.V3_1UpdateVault.handler(Hub.UpdateVault.handler as any);
+HubV3_1.V3_1UpdateContract.handler(Hub.UpdateContract.handler as any);
+HubV3_1.V3_1NotifyShareClass.handler(Hub.NotifyShareClass.handler as any);
+HubV3_1.V3_1NotifyShareMetadata.handler(Hub.NotifyShareMetadata.handler as any);
+HubV3_1.V3_1UpdateShareHook.handler(Hub.UpdateShareHook.handler as any);
+HubV3_1.V3_1ForwardTransferShares.handler(Hub.ForwardTransferShares.handler as any);
