@@ -34,6 +34,7 @@ contracts:
       - event: "UpdateRestriction(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, bytes payload)"
       - event: "UpdateShareHook(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, bytes32 hook)"
       - event: "ForwardTransferShares(uint16 indexed centrifugeId, uint64 indexed poolId, bytes16 scId, bytes32 receiver, uint128 amount)"
+      - event: "UpdateContract(uint16 centrifugeId, uint64 poolId, bytes16 scId, bytes32 target, bytes payload)"
 
   - name: Spoke
     abi_file_path: abis/Spoke.json

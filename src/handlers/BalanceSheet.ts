@@ -1,7 +1,15 @@
 import { BalanceSheet } from "generated";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
-import { holdingEscrowId, poolManagerId, accountId, blockchainId, snapshotId } from "../utils/ids";
+import {
+  holdingEscrowId,
+  poolManagerId,
+  accountId,
+  blockchainId,
+  snapshotId,
+  tokenId as tokenIdFn,
+  investorTransactionId,
+} from "../utils/ids";
 
 BalanceSheet.NoteDeposit.handler(async ({ event, context }) => {
   const { poolId, scId: tokenId, asset: assetAddress, amount, pricePoolPerAsset } = event.params;
@@ -39,6 +47,7 @@ BalanceSheet.NoteDeposit.handler(async ({ event, context }) => {
     assetAmount: newAssetAmount,
     assetPrice: pricePoolPerAsset,
     escrowAddress: escrow.address,
+    crosschainInProgress: existing?.crosschainInProgress ?? undefined,
     blockchain_id: blockchainId(centrifugeId),
     holding_id: existing?.holding_id ?? undefined,
     asset_id: asset.id,
@@ -99,6 +108,7 @@ BalanceSheet.Withdraw.handler(async ({ event, context }) => {
     assetAmount: newAssetAmount,
     assetPrice: pricePoolPerAsset,
     escrowAddress: escrow.address,
+    crosschainInProgress: existing?.crosschainInProgress ?? undefined,
     blockchain_id: blockchainId(centrifugeId),
     holding_id: existing?.holding_id ?? undefined,
     asset_id: asset.id,
@@ -142,6 +152,7 @@ BalanceSheet.UpdateManager.handler(async ({ event, context }) => {
     context.PoolManager.set({
       ...existing,
       isBalancesheetManager: canManage,
+      crosschainInProgress: undefined,
       ...updatedDefaults(event),
     });
   } else {
@@ -152,14 +163,230 @@ BalanceSheet.UpdateManager.handler(async ({ event, context }) => {
       poolId,
       isHubManager: false,
       isBalancesheetManager: canManage,
+      crosschainInProgress: undefined,
       pool_id: poolId.toString(),
       ...createdDefaults(event),
     });
   }
 });
 
-// --- Remaining events (Phase 5+) ---
-BalanceSheet.Deposit.handler(async ({ event, context }) => {});
-BalanceSheet.Issue.handler(async ({ event, context }) => {});
-BalanceSheet.Revoke.handler(async ({ event, context }) => {});
-BalanceSheet.TransferSharesFrom.handler(async ({ event, context }) => {});
+// --- Deposit: Track balance sheet asset deposits (hub-side) ---
+
+BalanceSheet.Deposit.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, asset: assetAddress, amount } = event.params;
+  const centrifugeId = getCentrifugeId(event.chainId);
+
+  // Look up asset by address
+  const assets = await context.Asset.getWhere({ address: { _eq: assetAddress.toLowerCase() } });
+  const asset = assets[0];
+  if (!asset) return;
+  const assetId = BigInt(asset.id);
+
+  // Look up escrow for this pool
+  const escrows = await context.Escrow.getWhere({ poolId: { _eq: poolId } });
+  const escrow = escrows.find((e: any) => e.centrifugeId === centrifugeId);
+  if (!escrow) return;
+
+  // Increment HoldingEscrow amount (same as NoteDeposit but without price update)
+  const heId = holdingEscrowId(tokenId, assetId);
+  const existing = await context.HoldingEscrow.get(heId);
+  const newAssetAmount = (existing?.assetAmount ?? 0n) + amount;
+
+  context.HoldingEscrow.set({
+    id: heId,
+    centrifugeId,
+    poolId,
+    tokenId,
+    assetId,
+    assetAddress: assetAddress.toLowerCase(),
+    assetAmount: newAssetAmount,
+    assetPrice: existing?.assetPrice ?? undefined,
+    escrowAddress: escrow.address,
+    crosschainInProgress: existing?.crosschainInProgress ?? undefined,
+    blockchain_id: blockchainId(centrifugeId),
+    holding_id: existing?.holding_id ?? undefined,
+    asset_id: asset.id,
+    escrow_id: existing?.escrow_id ?? escrow.id,
+    ...(existing ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
+  });
+});
+
+// --- Issue: Hub-side share issuance record ---
+
+BalanceSheet.Issue.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, to, pricePoolPerShare, shares } = event.params;
+  const centrifugeId = getCentrifugeId(event.chainId);
+  const toAddress = to.toLowerCase();
+
+  // Ensure account exists
+  await context.Account.getOrCreate({
+    id: accountId(toAddress),
+    address: toAddress,
+    ...createdDefaults(event),
+  });
+
+  // Update token price from the authoritative hub-side price
+  const tId = tokenIdFn(poolId, tokenId);
+  const token = await context.Token.get(tId);
+  if (token) {
+    context.Token.set({
+      ...token,
+      tokenPrice: pricePoolPerShare,
+      ...updatedDefaults(event),
+    });
+  }
+
+  // Create investor transaction record
+  context.InvestorTransaction.set({
+    id: investorTransactionId(poolId, tokenId, toAddress, "DEPOSIT_REQUEST_EXECUTED", event.transaction.hash),
+    txHash: event.transaction.hash,
+    centrifugeId,
+    poolId,
+    tokenId,
+    type: "DEPOSIT_REQUEST_EXECUTED",
+    account: toAddress,
+    epochIndex: undefined,
+    tokenAmount: shares,
+    currencyAmount: undefined,
+    tokenPrice: pricePoolPerShare,
+    transactionFee: undefined,
+    fromAccount: undefined,
+    toAccount: toAddress,
+    fromCentrifugeId: undefined,
+    toCentrifugeId: undefined,
+    currencyAssetId: undefined,
+    blockchain_id: blockchainId(centrifugeId),
+    pool_id: poolId.toString(),
+    token_id: tId,
+    currencyAsset_id: undefined,
+    ...createdDefaults(event),
+  });
+});
+
+// --- Revoke: Hub-side share revocation record ---
+
+BalanceSheet.Revoke.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, from, pricePoolPerShare, shares } = event.params;
+  const centrifugeId = getCentrifugeId(event.chainId);
+  const fromAddress = from.toLowerCase();
+
+  // Ensure account exists
+  await context.Account.getOrCreate({
+    id: accountId(fromAddress),
+    address: fromAddress,
+    ...createdDefaults(event),
+  });
+
+  // Update token price
+  const tId = tokenIdFn(poolId, tokenId);
+  const token = await context.Token.get(tId);
+  if (token) {
+    context.Token.set({
+      ...token,
+      tokenPrice: pricePoolPerShare,
+      ...updatedDefaults(event),
+    });
+  }
+
+  // Create investor transaction record
+  context.InvestorTransaction.set({
+    id: investorTransactionId(poolId, tokenId, fromAddress, "REDEEM_REQUEST_EXECUTED", event.transaction.hash),
+    txHash: event.transaction.hash,
+    centrifugeId,
+    poolId,
+    tokenId,
+    type: "REDEEM_REQUEST_EXECUTED",
+    account: fromAddress,
+    epochIndex: undefined,
+    tokenAmount: shares,
+    currencyAmount: undefined,
+    tokenPrice: pricePoolPerShare,
+    transactionFee: undefined,
+    fromAccount: fromAddress,
+    toAccount: undefined,
+    fromCentrifugeId: undefined,
+    toCentrifugeId: undefined,
+    currencyAssetId: undefined,
+    blockchain_id: blockchainId(centrifugeId),
+    pool_id: poolId.toString(),
+    token_id: tId,
+    currencyAsset_id: undefined,
+    ...createdDefaults(event),
+  });
+});
+
+// --- TransferSharesFrom: Hub-side cross-chain share transfer ---
+
+BalanceSheet.TransferSharesFrom.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, from, to, amount } = event.params;
+  const centrifugeId = getCentrifugeId(event.chainId);
+  const fromAddress = from.toLowerCase();
+  const toAddress = to.toLowerCase();
+
+  // Ensure accounts exist
+  await context.Account.getOrCreate({
+    id: accountId(fromAddress),
+    address: fromAddress,
+    ...createdDefaults(event),
+  });
+  await context.Account.getOrCreate({
+    id: accountId(toAddress),
+    address: toAddress,
+    ...createdDefaults(event),
+  });
+
+  const tId = tokenIdFn(poolId, tokenId);
+  const txHash = event.transaction.hash;
+
+  // Create TRANSFER_OUT transaction
+  context.InvestorTransaction.set({
+    id: investorTransactionId(poolId, tokenId, fromAddress, "TRANSFER_OUT", txHash),
+    txHash,
+    centrifugeId,
+    poolId,
+    tokenId,
+    type: "TRANSFER_OUT",
+    account: fromAddress,
+    epochIndex: undefined,
+    tokenAmount: amount,
+    currencyAmount: undefined,
+    tokenPrice: undefined,
+    transactionFee: undefined,
+    fromAccount: fromAddress,
+    toAccount: toAddress,
+    fromCentrifugeId: centrifugeId,
+    toCentrifugeId: centrifugeId,
+    currencyAssetId: undefined,
+    blockchain_id: blockchainId(centrifugeId),
+    pool_id: poolId.toString(),
+    token_id: tId,
+    currencyAsset_id: undefined,
+    ...createdDefaults(event),
+  });
+
+  // Create TRANSFER_IN transaction
+  context.InvestorTransaction.set({
+    id: investorTransactionId(poolId, tokenId, toAddress, "TRANSFER_IN", txHash),
+    txHash,
+    centrifugeId,
+    poolId,
+    tokenId,
+    type: "TRANSFER_IN",
+    account: toAddress,
+    epochIndex: undefined,
+    tokenAmount: amount,
+    currencyAmount: undefined,
+    tokenPrice: undefined,
+    transactionFee: undefined,
+    fromAccount: fromAddress,
+    toAccount: toAddress,
+    fromCentrifugeId: centrifugeId,
+    toCentrifugeId: centrifugeId,
+    currencyAssetId: undefined,
+    blockchain_id: blockchainId(centrifugeId),
+    pool_id: poolId.toString(),
+    token_id: tId,
+    currencyAsset_id: undefined,
+    ...createdDefaults(event),
+  });
+});

@@ -55,6 +55,8 @@ export async function deployVault(
     assetAddress: assetAddress.toLowerCase(),
     factory: factory.toLowerCase(),
     manager: undefined,
+    maxReserve: existing?.maxReserve ?? undefined,
+    crosschainInProgress: existing?.crosschainInProgress ?? undefined,
     blockchain_id: centrifugeId,
     token_id: tokenIdFn(poolId, tokenId),
     asset_id: asset ? asset.id : undefined,
@@ -80,6 +82,7 @@ export async function linkVault(
   context.Vault.set({
     ...vault,
     status: "Linked",
+    crosschainInProgress: undefined,
     ...updatedDefaults(event),
   });
 }
@@ -101,6 +104,7 @@ export async function unlinkVault(
   context.Vault.set({
     ...vault,
     status: "Unlinked",
+    crosschainInProgress: undefined,
     ...updatedDefaults(event),
   });
 }

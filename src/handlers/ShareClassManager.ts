@@ -273,6 +273,41 @@ ShareClassManager.ClaimRedeem.handler(async ({ event, context }) => {
   );
 });
 
-// --- Remaining events (stubs) ---
-ShareClassManager.RemoteIssueShares.handler(async ({ event, context }) => {});
-ShareClassManager.RemoteRevokeShares.handler(async ({ event, context }) => {});
+// --- RemoteIssueShares: Cross-chain share issuance notification ---
+
+ShareClassManager.RemoteIssueShares.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, issuedShareAmount } = event.params;
+
+  const tId = tokenIdFn(poolId, tokenId);
+  const existing = await context.Token.get(tId);
+  if (!existing) {
+    context.log.warn(`Token ${tId} not found for RemoteIssueShares`);
+    return;
+  }
+
+  context.Token.set({
+    ...existing,
+    totalIssuance: (existing.totalIssuance ?? 0n) + issuedShareAmount,
+    ...updatedDefaults(event),
+  });
+});
+
+// --- RemoteRevokeShares: Cross-chain share revocation notification ---
+
+ShareClassManager.RemoteRevokeShares.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, revokedShareAmount } = event.params;
+
+  const tId = tokenIdFn(poolId, tokenId);
+  const existing = await context.Token.get(tId);
+  if (!existing) {
+    context.log.warn(`Token ${tId} not found for RemoteRevokeShares`);
+    return;
+  }
+
+  const current = existing.totalIssuance ?? 0n;
+  context.Token.set({
+    ...existing,
+    totalIssuance: current > revokedShareAmount ? current - revokedShareAmount : 0n,
+    ...updatedDefaults(event),
+  });
+});

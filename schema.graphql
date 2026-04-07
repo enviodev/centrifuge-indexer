@@ -184,11 +184,13 @@ type Vault {
   kind: VaultKind
   status: VaultStatus
   poolId: BigInt!
-  tokenId: String!
+  tokenId: String! @index
   assetId: BigInt!
   assetAddress: String!
   factory: String!
   manager: String
+  maxReserve: BigInt
+  crosschainInProgress: String
   blockchain: Blockchain!
   token: Token!
   asset: Asset
@@ -249,6 +251,7 @@ type TokenInstance {
   tokenPrice: BigInt
   computedAt: Int
   totalIssuance: BigInt
+  crosschainInProgress: String
   blockchain: Blockchain!
   token: Token!
   # Derived relations
@@ -630,6 +633,7 @@ type HoldingEscrow {
   assetAmount: BigInt
   assetPrice: BigInt
   escrowAddress: String!
+  crosschainInProgress: String
   blockchain: Blockchain!
   holding: Holding
   asset: Asset
@@ -753,6 +757,7 @@ type PoolManager {
   poolId: BigInt!
   isHubManager: Boolean!
   isBalancesheetManager: Boolean!
+  crosschainInProgress: String
   pool: Pool!
   createdAt: Int!
   createdAtBlock: Int!

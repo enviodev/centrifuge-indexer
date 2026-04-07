@@ -616,10 +616,284 @@ Vault.Withdraw.handler(async ({ event, context }) => {
   }
 });
 
-// --- Cancel events (stubs) ---
-Vault.CancelDepositRequest.handler(async ({ event, context }) => {});
-Vault.CancelDepositClaim.handler(async ({ event, context }) => {});
-Vault.CancelDepositClaimable.handler(async ({ event, context }) => {});
-Vault.CancelRedeemRequest.handler(async ({ event, context }) => {});
-Vault.CancelRedeemClaim.handler(async ({ event, context }) => {});
-Vault.CancelRedeemClaimable.handler(async ({ event, context }) => {});
+// --- CancelDepositRequest ---
+
+Vault.CancelDepositRequest.handler(async ({ event, context }) => {
+  const { controller } = event.params;
+  const investor = controller.substring(0, 42).toLowerCase();
+
+  const ctx = await getVaultContext(event, context);
+  if (!ctx) return;
+  const { centrifugeId, vault, asset } = ctx;
+  const { poolId, tokenId, assetId } = vault;
+
+  await context.Account.getOrCreate({
+    id: accountId(investor),
+    address: investor,
+    ...createdDefaults(event),
+  });
+
+  context.InvestorTransaction.set({
+    id: investorTransactionId(poolId, tokenId, investor, "DEPOSIT_REQUEST_CANCELLED", event.transaction.hash),
+    txHash: event.transaction.hash,
+    centrifugeId,
+    poolId,
+    tokenId,
+    type: "DEPOSIT_REQUEST_CANCELLED",
+    account: investor,
+    epochIndex: undefined,
+    tokenAmount: undefined,
+    currencyAmount: undefined,
+    tokenPrice: undefined,
+    transactionFee: undefined,
+    fromAccount: undefined,
+    toAccount: undefined,
+    fromCentrifugeId: undefined,
+    toCentrifugeId: undefined,
+    currencyAssetId: assetId,
+    blockchain_id: blockchainId(centrifugeId),
+    pool_id: poolId.toString(),
+    token_id: tokenIdFn(poolId, tokenId),
+    currencyAsset_id: asset ? asset.id : undefined,
+    ...createdDefaults(event),
+  });
+});
+
+// --- CancelDepositClaim ---
+
+Vault.CancelDepositClaim.handler(async ({ event, context }) => {
+  const { controller, assets } = event.params;
+  const investor = controller.substring(0, 42).toLowerCase();
+
+  const ctx = await getVaultContext(event, context);
+  if (!ctx) return;
+  const { centrifugeId, vault, asset } = ctx;
+  const { poolId, tokenId, assetId } = vault;
+
+  await context.Account.getOrCreate({
+    id: accountId(investor),
+    address: investor,
+    ...createdDefaults(event),
+  });
+
+  context.InvestorTransaction.set({
+    id: investorTransactionId(poolId, tokenId, investor, "DEPOSIT_REQUEST_CANCELLED", event.transaction.hash + "-claim"),
+    txHash: event.transaction.hash,
+    centrifugeId,
+    poolId,
+    tokenId,
+    type: "DEPOSIT_REQUEST_CANCELLED",
+    account: investor,
+    epochIndex: undefined,
+    tokenAmount: undefined,
+    currencyAmount: assets,
+    tokenPrice: undefined,
+    transactionFee: undefined,
+    fromAccount: undefined,
+    toAccount: undefined,
+    fromCentrifugeId: undefined,
+    toCentrifugeId: undefined,
+    currencyAssetId: assetId,
+    blockchain_id: blockchainId(centrifugeId),
+    pool_id: poolId.toString(),
+    token_id: tokenIdFn(poolId, tokenId),
+    currencyAsset_id: asset ? asset.id : undefined,
+    ...createdDefaults(event),
+  });
+
+  // Clear VaultInvestOrder
+  const vioId = vaultInvestOrderId(tokenId, centrifugeId, assetId, investor);
+  const existingVio = await context.VaultInvestOrder.get(vioId);
+  if (existingVio) {
+    context.VaultInvestOrder.set({
+      ...existingVio,
+      requestedAssetsAmount: 0n,
+      claimableAssetsAmount: 0n,
+      ...updatedDefaults(event),
+    });
+  }
+});
+
+// --- CancelDepositClaimable ---
+
+Vault.CancelDepositClaimable.handler(async ({ event, context }) => {
+  const { controller, assets } = event.params;
+  const investor = controller.substring(0, 42).toLowerCase();
+
+  const ctx = await getVaultContext(event, context);
+  if (!ctx) return;
+  const { centrifugeId, vault, asset } = ctx;
+  const { poolId, tokenId, assetId } = vault;
+
+  await context.Account.getOrCreate({
+    id: accountId(investor),
+    address: investor,
+    ...createdDefaults(event),
+  });
+
+  context.InvestorTransaction.set({
+    id: investorTransactionId(poolId, tokenId, investor, "DEPOSIT_REQUEST_CANCELLED", event.transaction.hash + "-claimable"),
+    txHash: event.transaction.hash,
+    centrifugeId,
+    poolId,
+    tokenId,
+    type: "DEPOSIT_REQUEST_CANCELLED",
+    account: investor,
+    epochIndex: undefined,
+    tokenAmount: undefined,
+    currencyAmount: assets,
+    tokenPrice: undefined,
+    transactionFee: undefined,
+    fromAccount: undefined,
+    toAccount: undefined,
+    fromCentrifugeId: undefined,
+    toCentrifugeId: undefined,
+    currencyAssetId: assetId,
+    blockchain_id: blockchainId(centrifugeId),
+    pool_id: poolId.toString(),
+    token_id: tokenIdFn(poolId, tokenId),
+    currencyAsset_id: asset ? asset.id : undefined,
+    ...createdDefaults(event),
+  });
+});
+
+// --- CancelRedeemRequest ---
+
+Vault.CancelRedeemRequest.handler(async ({ event, context }) => {
+  const { controller } = event.params;
+  const investor = controller.substring(0, 42).toLowerCase();
+
+  const ctx = await getVaultContext(event, context);
+  if (!ctx) return;
+  const { centrifugeId, vault, asset } = ctx;
+  const { poolId, tokenId, assetId } = vault;
+
+  await context.Account.getOrCreate({
+    id: accountId(investor),
+    address: investor,
+    ...createdDefaults(event),
+  });
+
+  context.InvestorTransaction.set({
+    id: investorTransactionId(poolId, tokenId, investor, "REDEEM_REQUEST_CANCELLED", event.transaction.hash),
+    txHash: event.transaction.hash,
+    centrifugeId,
+    poolId,
+    tokenId,
+    type: "REDEEM_REQUEST_CANCELLED",
+    account: investor,
+    epochIndex: undefined,
+    tokenAmount: undefined,
+    currencyAmount: undefined,
+    tokenPrice: undefined,
+    transactionFee: undefined,
+    fromAccount: undefined,
+    toAccount: undefined,
+    fromCentrifugeId: undefined,
+    toCentrifugeId: undefined,
+    currencyAssetId: assetId,
+    blockchain_id: blockchainId(centrifugeId),
+    pool_id: poolId.toString(),
+    token_id: tokenIdFn(poolId, tokenId),
+    currencyAsset_id: asset ? asset.id : undefined,
+    ...createdDefaults(event),
+  });
+});
+
+// --- CancelRedeemClaim ---
+
+Vault.CancelRedeemClaim.handler(async ({ event, context }) => {
+  const { controller, shares } = event.params;
+  const investor = controller.substring(0, 42).toLowerCase();
+
+  const ctx = await getVaultContext(event, context);
+  if (!ctx) return;
+  const { centrifugeId, vault, asset } = ctx;
+  const { poolId, tokenId, assetId } = vault;
+
+  await context.Account.getOrCreate({
+    id: accountId(investor),
+    address: investor,
+    ...createdDefaults(event),
+  });
+
+  context.InvestorTransaction.set({
+    id: investorTransactionId(poolId, tokenId, investor, "REDEEM_REQUEST_CANCELLED", event.transaction.hash + "-claim"),
+    txHash: event.transaction.hash,
+    centrifugeId,
+    poolId,
+    tokenId,
+    type: "REDEEM_REQUEST_CANCELLED",
+    account: investor,
+    epochIndex: undefined,
+    tokenAmount: shares,
+    currencyAmount: undefined,
+    tokenPrice: undefined,
+    transactionFee: undefined,
+    fromAccount: undefined,
+    toAccount: undefined,
+    fromCentrifugeId: undefined,
+    toCentrifugeId: undefined,
+    currencyAssetId: assetId,
+    blockchain_id: blockchainId(centrifugeId),
+    pool_id: poolId.toString(),
+    token_id: tokenIdFn(poolId, tokenId),
+    currencyAsset_id: asset ? asset.id : undefined,
+    ...createdDefaults(event),
+  });
+
+  // Clear VaultRedeemOrder
+  const vroId = vaultRedeemOrderId(tokenId, centrifugeId, assetId, investor);
+  const existingVro = await context.VaultRedeemOrder.get(vroId);
+  if (existingVro) {
+    context.VaultRedeemOrder.set({
+      ...existingVro,
+      requestedSharesAmount: 0n,
+      claimableSharesAmount: 0n,
+      ...updatedDefaults(event),
+    });
+  }
+});
+
+// --- CancelRedeemClaimable ---
+
+Vault.CancelRedeemClaimable.handler(async ({ event, context }) => {
+  const { controller, shares } = event.params;
+  const investor = controller.substring(0, 42).toLowerCase();
+
+  const ctx = await getVaultContext(event, context);
+  if (!ctx) return;
+  const { centrifugeId, vault, asset } = ctx;
+  const { poolId, tokenId, assetId } = vault;
+
+  await context.Account.getOrCreate({
+    id: accountId(investor),
+    address: investor,
+    ...createdDefaults(event),
+  });
+
+  context.InvestorTransaction.set({
+    id: investorTransactionId(poolId, tokenId, investor, "REDEEM_REQUEST_CANCELLED", event.transaction.hash + "-claimable"),
+    txHash: event.transaction.hash,
+    centrifugeId,
+    poolId,
+    tokenId,
+    type: "REDEEM_REQUEST_CANCELLED",
+    account: investor,
+    epochIndex: undefined,
+    tokenAmount: shares,
+    currencyAmount: undefined,
+    tokenPrice: undefined,
+    transactionFee: undefined,
+    fromAccount: undefined,
+    toAccount: undefined,
+    fromCentrifugeId: undefined,
+    toCentrifugeId: undefined,
+    currencyAssetId: assetId,
+    blockchain_id: blockchainId(centrifugeId),
+    pool_id: poolId.toString(),
+    token_id: tokenIdFn(poolId, tokenId),
+    currencyAsset_id: asset ? asset.id : undefined,
+    ...createdDefaults(event),
+  });
+});

@@ -203,5 +203,58 @@ Holdings.UpdateValuation.handler(async ({ event, context }) => {
   }
 });
 
-Holdings.UpdateIsLiability.handler(async ({ event, context }) => {});
-Holdings.SetAccountId.handler(async ({ event, context }) => {});
+Holdings.UpdateIsLiability.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, assetId, isLiability } = event.params;
+  const centrifugeId = getCentrifugeId(event.chainId);
+
+  const hId = holdingId(tokenId, assetId);
+  const existing = await context.Holding.get(hId);
+
+  if (existing) {
+    context.Holding.set({
+      ...existing,
+      isLiability,
+      ...updatedDefaults(event),
+    });
+  } else {
+    context.Holding.set({
+      id: hId,
+      centrifugeId,
+      poolId,
+      tokenId,
+      isInitialized: false,
+      isLiability,
+      valuation: undefined,
+      assetId,
+      assetQuantity: undefined,
+      totalValue: undefined,
+      blockchain_id: blockchainId(centrifugeId),
+      token_id: tokenIdFn(poolId, tokenId),
+      holdingEscrow_id: undefined,
+      ...createdDefaults(event),
+    });
+  }
+});
+
+Holdings.SetAccountId.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, assetId, kind, accountId: newAccountId } = event.params;
+
+  const hId = holdingId(tokenId, assetId);
+  const existing = await context.Holding.get(hId);
+  const isLiability = existing?.isLiability ?? false;
+
+  // Determine kind name based on liability status
+  const kindName = isLiability
+    ? (LIABILITY_TYPES[Number(kind)] ?? "Expense")
+    : (NON_LIABILITY_TYPES[Number(kind)] ?? "Asset");
+
+  // Update or create the HoldingAccount with the new account ID
+  const haId = holdingAccountId(newAccountId.toString());
+  context.HoldingAccount.set({
+    id: haId,
+    tokenId,
+    kind: kindName,
+    holding_id: hId,
+    ...createdDefaults(event),
+  });
+});

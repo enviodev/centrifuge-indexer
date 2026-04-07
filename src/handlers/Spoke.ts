@@ -25,7 +25,10 @@ Spoke.DeployVault.contractRegister(({ event, context }) => {
 
 // --- Handlers ---
 
-Spoke.AddPool.handler(async ({ event, context }) => {});
+Spoke.AddPool.handler(async ({ event, context }) => {
+  // Pool creation is tracked via HubRegistry.NewPool on the hub side.
+  // Spoke.AddPool confirms the spoke received the notification — no entity tracking needed.
+});
 
 Spoke.RegisterAsset.handler(async ({ event, context }) => {
   const { assetId, asset: assetAddress, tokenId: assetTokenId, name, symbol, decimals } = event.params;
@@ -76,6 +79,7 @@ Spoke.AddShareClass.handler(async ({ event, context }) => {
     tokenPrice: existingTi?.tokenPrice ?? undefined,
     computedAt: existingTi?.computedAt ?? undefined,
     totalIssuance: existingTi?.totalIssuance ?? 0n,
+    crosschainInProgress: existingTi?.crosschainInProgress ?? undefined,
     blockchain_id: blockchainId(centrifugeId),
     token_id: tokenIdFn(poolId, tokenId),
     ...(existingTi ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
@@ -155,6 +159,7 @@ Spoke.UpdateSharePrice.handler(async ({ event, context }) => {
     ...ti,
     tokenPrice,
     computedAt,
+    crosschainInProgress: undefined,
     ...updatedDefaults(event),
   });
 });
@@ -194,6 +199,7 @@ Spoke.UpdateAssetPrice.handler(async ({ event, context }) => {
     assetAmount: existingHe?.assetAmount ?? undefined,
     assetPrice,
     escrowAddress: escrow.address,
+    crosschainInProgress: undefined,
     blockchain_id: blockchainId(centrifugeId),
     holding_id: existingHe?.holding_id ?? undefined,
     asset_id: asset.id,
@@ -286,5 +292,44 @@ Spoke.InitiateTransferShares.handler(async ({ event, context }) => {
   });
 });
 
-Spoke.ExecuteTransferShares.handler(async ({ event, context }) => {});
-Spoke.SetRequestManager.handler(async ({ event, context }) => {});
+Spoke.ExecuteTransferShares.handler(async ({ event, context }) => {
+  const { poolId, scId: tokenId, receiver, amount } = event.params;
+  const centrifugeId = getCentrifugeId(event.chainId);
+  const receiverAddress = receiver.toLowerCase();
+
+  // Ensure receiver account exists
+  await context.Account.getOrCreate({
+    id: accountId(receiverAddress),
+    address: receiverAddress,
+    ...createdDefaults(event),
+  });
+
+  // Update TokenInstancePosition for the receiver
+  const tipId = tokenInstancePositionId(tokenId, centrifugeId, receiverAddress);
+  const existingTip = await context.TokenInstancePosition.get(tipId);
+  if (existingTip) {
+    context.TokenInstancePosition.set({
+      ...existingTip,
+      balance: (existingTip.balance ?? 0n) + amount,
+      ...updatedDefaults(event),
+    });
+  } else {
+    const tiId = tokenInstanceId(centrifugeId, tokenId);
+    context.TokenInstancePosition.set({
+      id: tipId,
+      tokenId,
+      centrifugeId,
+      accountAddress: receiverAddress,
+      balance: amount,
+      isFrozen: false,
+      tokenInstance_id: tiId,
+      account_id: accountId(receiverAddress),
+      ...createdDefaults(event),
+    });
+  }
+});
+
+Spoke.SetRequestManager.handler(async ({ event, context }) => {
+  // Informational: tracks which request manager is set for a pool/token/asset.
+  // The BatchRequestManager contract handles the actual request events.
+});

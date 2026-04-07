@@ -77,6 +77,7 @@ HubRegistry.NewPool.handler(async ({ event, context }) => {
     poolId,
     isHubManager: true,
     isBalancesheetManager: existingPm?.isBalancesheetManager ?? false,
+    crosschainInProgress: existingPm?.crosschainInProgress ?? undefined,
     pool_id: poolId.toString(),
     ...(existingPm ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
   });
@@ -174,6 +175,7 @@ HubRegistry.UpdateManager.handler(async ({ event, context }) => {
       poolId,
       isHubManager: canManage,
       isBalancesheetManager: false,
+      crosschainInProgress: undefined,
       pool_id: poolId.toString(),
       ...createdDefaults(event),
     });
