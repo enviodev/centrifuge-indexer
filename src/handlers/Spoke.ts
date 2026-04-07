@@ -13,6 +13,7 @@ import {
 } from "../utils/ids";
 import { getInitialHolders } from "../utils/constants";
 import { deployVault, linkVault, unlinkVault } from "./shared/vaultOps";
+import { readTotalSupply } from "../effects/totalSupply";
 
 // --- contractRegister for AddShareClass (registers TokenInstance ERC20) ---
 const _crAddShareClass = ({ event, context }: any) => {
@@ -72,9 +73,20 @@ const _handleAddShareClass = async ({ event, context }: any) => {
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
-  // Get or create TokenInstance (skip RPC totalSupply — init to 0, Transfer events will correct)
+  // Get or create TokenInstance — read totalSupply via RPC to capture pre-registration mints
   const tiId = tokenInstanceId(centrifugeId, tokenId);
   const existingTi = await context.TokenInstance.get(tiId);
+
+  let initialSupply = existingTi?.totalIssuance ?? 0n;
+  if (initialSupply === 0n) {
+    try {
+      const supplyStr = await context.effect(readTotalSupply, JSON.stringify({
+        chainId: event.chainId,
+        tokenAddress: tokenAddress.toLowerCase(),
+      }));
+      initialSupply = BigInt(supplyStr);
+    } catch { /* RPC failure — keep 0 */ }
+  }
 
   context.TokenInstance.set({
     id: tiId,
@@ -84,7 +96,7 @@ const _handleAddShareClass = async ({ event, context }: any) => {
     address: tokenAddress.toLowerCase(),
     tokenPrice: existingTi?.tokenPrice ?? undefined,
     computedAt: existingTi?.computedAt ?? undefined,
-    totalIssuance: existingTi?.totalIssuance ?? 0n,
+    totalIssuance: initialSupply,
     crosschainInProgress: existingTi?.crosschainInProgress ?? undefined,
     blockchain_id: blockchainId(centrifugeId),
     token_id: tokenIdFn(poolId, tokenId),
@@ -105,7 +117,7 @@ const _handleAddShareClass = async ({ event, context }: any) => {
     name: existingToken?.name ?? undefined,
     symbol: existingToken?.symbol ?? undefined,
     salt: existingToken?.salt ?? undefined,
-    totalIssuance: existingToken?.totalIssuance ?? 0n,
+    totalIssuance: existingToken?.totalIssuance ?? initialSupply,
     tokenPrice: existingToken?.tokenPrice ?? undefined,
     tokenPriceComputedAt: existingToken?.tokenPriceComputedAt ?? undefined,
     blockchain_id: blockchainId(centrifugeId),

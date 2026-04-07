@@ -1,4 +1,5 @@
 import { MultiAdapter, MultiAdapterV3_1 } from "generated";
+import { tryCompletePayload } from "./Gateway";
 import { getCentrifugeId, ADAPTER_ADDRESSES } from "../utils/chains";
 import { createdDefaults } from "../utils/defaults";
 import {
@@ -342,22 +343,8 @@ async function handleHandlePayload(event: any, context: any) {
           deliveredAtTxHash: event.transaction.hash,
         });
 
-        // Check if all messages are already executed → mark as completed
-        const payloadMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: payloadIdHex } });
-        const relevantMessages = payloadMessages.filter((m: any) => m.payloadIndex === payloadIndex);
-        const allExecuted = relevantMessages.length > 0 && relevantMessages.every((m: any) => m.status === "Executed");
-        if (allExecuted) {
-          const updatedPayload = await context.CrosschainPayload.get(payloadEntityId);
-          if (updatedPayload) {
-            context.CrosschainPayload.set({
-              ...updatedPayload,
-              status: "Completed",
-              completedAt: event.block.timestamp,
-              completedAtBlock: event.block.number,
-              completedAtTxHash: event.transaction.hash,
-            });
-          }
-        }
+        // Order-independent: check if messages already executed (receiver processed first)
+        await tryCompletePayload(context, payloadIdHex, event);
       }
     }
   }
@@ -459,22 +446,8 @@ MultiAdapter.HandleProof.handler(async ({ event, context }) => {
           deliveredAtTxHash: event.transaction.hash,
         });
 
-        // Check if all messages are already executed → mark as completed
-        const payloadMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: payloadIdHex } });
-        const relevantMessages = payloadMessages.filter((m: any) => m.payloadIndex === payloadIndex);
-        const allExecuted = relevantMessages.length > 0 && relevantMessages.every((m: any) => m.status === "Executed");
-        if (allExecuted) {
-          const updatedPayload = await context.CrosschainPayload.get(payloadEntityId);
-          if (updatedPayload) {
-            context.CrosschainPayload.set({
-              ...updatedPayload,
-              status: "Completed",
-              completedAt: event.block.timestamp,
-              completedAtBlock: event.block.number,
-              completedAtTxHash: event.transaction.hash,
-            });
-          }
-        }
+        // Order-independent: check if messages already executed (receiver processed first)
+        await tryCompletePayload(context, payloadIdHex, event);
       }
     }
   }

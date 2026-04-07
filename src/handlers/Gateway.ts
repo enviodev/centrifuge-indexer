@@ -16,6 +16,39 @@ import {
   getVersionIndex,
 } from "../utils/messageParser";
 
+/**
+ * Order-independent payload completion check.
+ * Called at every state transition point — if all messages are terminal (Executed/Failed)
+ * and the payload is Delivered, transition to Completed.
+ * Safe to call multiple times; only transitions when all conditions are met.
+ */
+export async function tryCompletePayload(
+  context: any,
+  payloadId: string,
+  event: { block: { timestamp: number; number: number }; transaction: { hash: string } }
+) {
+  const payloads = await context.CrosschainPayload.getWhere({ payloadId: { _eq: payloadId } });
+  for (const payload of payloads) {
+    if (payload.status !== "Delivered" && payload.status !== "PartiallyFailed") continue;
+
+    const messages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: payloadId } });
+    const relevant = messages.filter((m: any) => m.payloadIndex === payload.index);
+    if (relevant.length === 0) continue;
+
+    const allTerminal = relevant.every((m: any) => m.status === "Executed" || m.status === "Failed");
+    if (allTerminal) {
+      const hasFailed = relevant.some((m: any) => m.status === "Failed");
+      context.CrosschainPayload.set({
+        ...payload,
+        status: hasFailed ? "PartiallyFailed" : "Completed",
+        completedAt: event.block.timestamp,
+        completedAtBlock: event.block.number,
+        completedAtTxHash: event.transaction.hash,
+      });
+    }
+  }
+}
+
 // --- PrepareMessage ---
 
 const _handlePrepareMessage = async ({ event, context }: any) => {
@@ -41,24 +74,9 @@ const _handlePrepareMessage = async ({ event, context }: any) => {
       pool_id: poolId > 0n ? poolId.toString() : executedMsg.pool_id,
     });
 
-    // If this message has a payload link, check if payload can be completed
+    // Check if payload can be completed (order-independent)
     if (executedMsg.payloadId) {
-      const payloads = await context.CrosschainPayload.getWhere({ payloadId: { _eq: executedMsg.payloadId } });
-      const payload = payloads.find((p: any) => p.status === "Delivered" || p.status === "PartiallyFailed");
-      if (payload) {
-        const payloadMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: executedMsg.payloadId } });
-        const relevant = payloadMessages.filter((m: any) => m.payloadIndex === payload.index);
-        const allDone = relevant.length > 0 && relevant.every((m: any) => m.status === "Executed" || m.status === "Failed");
-        if (allDone) {
-          context.CrosschainPayload.set({
-            ...payload,
-            status: "Completed",
-            completedAt: event.block.timestamp,
-            completedAtBlock: event.block.number,
-            completedAtTxHash: event.transaction.hash,
-          });
-        }
-      }
+      await tryCompletePayload(context, executedMsg.payloadId, event);
     }
     return;
   }
@@ -166,7 +184,15 @@ const _handleUnderpaidBatch = async ({ event, context }: any) => {
     });
   }
 
-  // Create payload
+  // Check if all linked messages are already terminal (receiver processed first)
+  const allLinkedMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: payloadIdHash } });
+  const relevant = allLinkedMessages.filter((m: any) => m.payloadIndex === payloadIndex);
+  const allTerminal = relevant.length > 0 && relevant.every(
+    (m: any) => m.status === "Executed" || m.status === "Failed"
+  );
+
+  // Create payload — skip straight to Delivered/Completed if messages already done
+  const initialStatus = allTerminal ? "Completed" : "Underpaid";
   context.CrosschainPayload.set({
     id: payloadEntityId,
     payloadId: payloadIdHash,
@@ -175,7 +201,7 @@ const _handleUnderpaidBatch = async ({ event, context }: any) => {
     toCentrifugeId,
     rawData: batchHex,
     poolId: batchPoolId,
-    status: "Underpaid",
+    status: initialStatus,
     gasLimit: undefined,
     gasPaid: undefined,
     deliveredAt: undefined,
@@ -293,32 +319,9 @@ const _handleExecuteMessage = async ({ event, context }: any) => {
     executedAtTxHash: event.transaction.hash,
   });
 
-  // Check if payload is fully executed
-  const { payloadId } = crosschainMsg;
-  if (!payloadId) return;
-
-  const payloads = await context.CrosschainPayload.getWhere({ payloadId: { _eq: payloadId } });
-  const payload = payloads.find(
-    (p: any) => p.status === "Delivered" || p.status === "PartiallyFailed"
-  );
-  if (!payload) return;
-
-  // Check all messages for this payload
-  // Note: the current message was just set to Executed but getWhere may return stale state
-  const payloadMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: payloadId } });
-  const relevantMessages = payloadMessages.filter((m: any) => m.payloadIndex === payload.index);
-  const allExecuted = relevantMessages.length > 0 && relevantMessages.every(
-    (m: any) => m.status === "Executed" || m.status === "Failed" || m.id === crosschainMsg.id
-  );
-
-  if (allExecuted) {
-    context.CrosschainPayload.set({
-      ...payload,
-      status: "Completed",
-      completedAt: event.block.timestamp,
-      completedAtBlock: event.block.number,
-      completedAtTxHash: event.transaction.hash,
-    });
+  // Order-independent completion check
+  if (crosschainMsg.payloadId) {
+    await tryCompletePayload(context, crosschainMsg.payloadId, event);
   }
 };
 Gateway.ExecuteMessage.handler(_handleExecuteMessage);
@@ -385,18 +388,10 @@ const _handleFailMessage = async ({ event, context }: any) => {
     failReason: error,
   });
 
-  // Mark payload as PartiallyFailed
-  const { payloadId } = crosschainMsg;
-  if (!payloadId) return;
-
-  const payloads = await context.CrosschainPayload.getWhere({ payloadId: { _eq: payloadId } });
-  const payload = payloads.find((p: any) => p.status === "Delivered");
-  if (!payload) return;
-
-  context.CrosschainPayload.set({
-    ...payload,
-    status: "PartiallyFailed",
-  });
+  // Order-independent completion check (will set PartiallyFailed if some failed)
+  if (crosschainMsg.payloadId) {
+    await tryCompletePayload(context, crosschainMsg.payloadId, event);
+  }
 };
 Gateway.FailMessage.handler(_handleFailMessage);
 
