@@ -1,6 +1,8 @@
-## Envio ERC20 Template
+## centrifuge indexer
 
-_Please refer to the [documentation website](https://docs.envio.dev) for a thorough guide on all [Envio](https://envio.dev) indexer features_
+Envio indexer for [Centrifuge](https://centrifuge.io) protocol contracts and cross-chain messages.
+
+See the [Envio documentation](https://docs.envio.dev) for indexer setup, codegen, and deployment.
 
 ### Run
 
