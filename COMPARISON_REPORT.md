@@ -1,95 +1,69 @@
 # Envio vs Ponder API Comparison Report
 > Generated: 2026-04-07 | Envio: localhost:8080 | Ponder: api.centrifuge.io
 
-## Changes Made (2 commits)
+## Final Scoreboard
 
-### Commit 1: Implement all remaining stub handlers
-- Implemented 30+ previously-empty event handlers across Hub, BalanceSheet, Holdings, ShareClassManager, Spoke, BatchRequestManager, PoolEscrow, Vault
-- Added `crosschainInProgress` tracking on Vault, TokenInstance, HoldingEscrow, PoolManager
-- Added `maxReserve` field on Vault
-- Added Hub.UpdateContract event for SyncManager trusted call handling
-- Created `src/utils/updateContractDecoders.ts` for payload decoding
-
-### Commit 2: Critical data fixes
-- **tokenId bytes16 normalization**: Envio was padding `bytes16` scId values to `bytes32` (66 chars). Added `normalizeScId()` and applied across all 46 handler destructuring points. tokenId now correctly matches Ponder's format (34 chars).
-- **VaultRegistry singleton address**: Was listed as a factory contract with no address, meaning all V3.1 vault events (Deploy/Link/Unlink) were silently dropped. Added address `0xd9531AC47928c3386346f82d9A2478960bf2CA7B` to all chains.
-- **SyncManager contract**: New handler for `SetMaxReserve` event with address `0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D`.
-- **3 new chains**: Optimism (chainId 10), Hyperliquid (chainId 999), Monad (chainId 143) with full contract configs from the Centrifuge registry.
-
----
-
-## Comparison Results
-
-### Scoreboard
-
-| Entity | Ponder | Envio | Match % | Status |
+| Entity | Ponder | Envio | Match | Notes |
 |---|---|---|---|---|
-| **Pools** | 18 | 13 | 72% | 5 missing (see below) |
-| **Tokens** | 24 | 19 | 79% | Metadata gaps |
-| **Vaults** | 54 | **54** | **100%** | Count matches exactly |
-| **Vault Status (Linked)** | 47 | **47** | **100%** | Fixed from 2 |
-| **Vault Kind** | - | - | **100%** | All match |
-| **HoldingEscrows** | 97 | 28 | 29% | Missing chain data |
-| **WhitelistedInvestors** | 195 | 94 | 48% | Missing chain data |
-| **InvestorTransactions** | 16K+ | 664 | ~4% | Most are ERC20 transfers |
-| **CrosschainPayloads** | ~4K | 4,024 | ~99% | Status progression gap |
-| **Holdings** | 2 | 0 | 0% | Arbitrum-only |
+| **Pools** | 18 | **18** | **100%** | All fields match |
+| **Tokens** | 24 | **24** | **100%** | name/symbol/decimals all populated |
+| **Token totalIssuance** | ~22 with values | **5** | ~23% | IssueShares tracks it; ERC20 mints pre-registration missed |
+| **Vaults** | 54 | **54** | **100%** | kind + status match |
+| **Vault Linked** | 47 | **47** | **100%** | |
+| **Vault maxReserve** | 54 | **54** | **100%** | Initialized to max uint128 |
+| **PoolManagers** | 177 | **177** | **100%** | |
+| **WhitelistedInvestors** | 195 | **195** | **100%** | validUntil in ms |
+| **InvestorTransactions** | 16K+ | **1,316** | ~8% | All 13 types present; gap from missed ERC20 transfers |
+| **CrosschainPayloads** | ~4K | **4,039** | ~100% | 190 Completed (improving) |
+| **HoldingEscrows** | 97 | **28** | 29% | 69 missing = Arbitrum pool escrow not deployed |
+| **Holdings** | 2 | **0** | 0% | Arbitrum pool only |
 
-### Key Improvements
+## Journey: Before → After
 
-| Metric | Before Fix | After Fix |
-|---|---|---|
-| Linked Vaults | **2** | **47** (100% match) |
-| Total Vaults | ~34 | **54** (100% match) |
-| tokenId format | bytes32 (broken) | **bytes16** (matches Ponder) |
-| Chains indexed | 6 | **9** |
-| SyncManager events | Not handled | **Handled** |
-| Stub handlers | 14 empty | **0 empty** |
+| Metric | Starting Point | Final State | Improvement |
+|---|---|---|---|
+| Pools | 13 | **18** | +38% |
+| Tokens | 10 | **24** | +140% |
+| Token name populated | 5/24 | **24/24** | +380% |
+| Token decimals populated | 4/24 | **24/24** | +500% |
+| Token totalIssuance > 0 | 0/24 | **5/24** | New |
+| Vaults | 34 | **54** | +59% |
+| Vault Linked status | 2/54 | **47/54** | +2250% |
+| Vault maxReserve set | 3/54 | **54/54** | +1700% |
+| WhitelistedInvestors | 94 | **195** | +107% |
+| InvestorTransaction types | 4 | **13** | All types |
+| InvestorTransactions | 630 | **1,316** | +109% |
+| Chains indexed | 6 | **9** | +50% |
+| Stub handlers | 14 | **0** | All implemented |
 
----
+## What Was Fixed (8 commits)
 
-## Remaining Gaps
+1. **All 30+ stub handlers implemented** — crosschainInProgress, maxReserve, cancel events, etc.
+2. **tokenId bytes16 normalization** — Envio pads bytes16→bytes32; added normalizeScId() across 46 handlers
+3. **VaultRegistry singleton address** — Was factory contract (no address), events silently dropped
+4. **SyncManager contract** — New handler for SetMaxReserve spoke-side event
+5. **3 new chains** — Optimism, Hyperliquid, Monad with full contract configs
+6. **V3.1 contract support** — All 7 core contracts (HubRegistry, Hub, Spoke, Gateway, BalanceSheet, Holdings, ShareClassManager) with V3.1 addresses on all 9 chains
+7. **Named function handler delegation** — V3.1 events properly delegate to V3 handler logic
+8. **6 data gap fixes** — maxReserve init, validUntil ms, token metadata preservation, crosschain completion, crosschainInProgress ordering, totalIssuance in IssueShares/RevokeShares
 
-### 1. Missing 5 Pools (Priority: Medium)
-- 3 Arbitrum pools (844424930131969/70/71) and 2 Ethereum pools (281474976710669/70)
-- These pools were likely created on **V3.1 HubRegistry addresses** which are different from the V3 addresses our config uses for the original 6 chains
-- Fix: Add V3.1 HubRegistry addresses alongside V3 addresses for Ethereum and Arbitrum
+## Remaining Known Gaps
 
-### 2. Token Metadata Empty (Priority: Medium)
-- 17/19 tokens have null name, symbol, decimals
-- `totalIssuance` is 0 for all tokens
-- `tokenPriceComputedAt` is null everywhere
-- Root cause: ShareClassManager.AddShareClass events set metadata, but the Token entity may be created first by Spoke.AddShareClass (which doesn't have metadata) and then the Hub-side event overwrites don't reach it
-- The totalIssuance should be tracked through ERC20 Transfer events on TokenInstance — verify factory registration is working
+### Token totalIssuance (19/24 still zero)
+- **Root cause**: ERC20 Transfer events (mint/burn) for tokens registered via contractRegister miss events that occurred BEFORE the registration block. Envio's "same-block coverage" doesn't help when the token was deployed in an earlier block than AddShareClass.
+- **Impact**: Medium — totalIssuance is used for TVL calculations and display
+- **Fix options**: (a) Read totalSupply via RPC effect on AddShareClass, (b) Track via BalanceSheet.Issue events (already done), (c) Accept that only IssueShares-tracked issuance is captured
 
-### 3. InvestorTransaction Count Gap (Priority: Low-Medium)
-- Ponder: ~16K (mostly TRANSFER_IN/OUT from ERC20 events)
-- Envio: 664 (richer type distribution but lower volume)
-- The bulk of Ponder's transactions come from ERC20 Transfer events. If TokenInstance factory registration isn't catching all deployed token addresses, we miss these.
+### HoldingEscrow count gap (28/97)
+- **Root cause**: 69 missing records are for Arbitrum pool 844424930131969. The PoolEscrow for this pool was deployed on Arbitrum but the BalanceSheet NoteDeposit/Withdraw events on Ethereum reference this pool. Without the Escrow entity for this pool+centrifugeId, the handler skips.
+- **Impact**: Low-medium — affects balance sheet accounting for one pool
+- **Fix**: PoolEscrow deployment may happen on a different chain than where BalanceSheet events fire
 
-### 4. CrosschainPayload Status Progression (Priority: Low)
-- Most payloads stuck at "Delivered" instead of progressing to "Completed"
-- The Delivered→Completed transition happens when all messages in a payload are Executed
-- The Gateway.ExecuteMessage handler exists but may not be linking back to payloads correctly
+### CrosschainPayload completion rate (~5% vs ~85% in Ponder)
+- **Root cause**: No cross-chain event ordering — receiver ExecuteMessage may fire before sender UnderpaidBatch, creating messages without payload links. Completion check can't find the payload.
+- **Impact**: Low — status is informational, doesn't affect core protocol data
+- **Fix applied**: UnderpaidBatch now links Executed messages, PrepareMessage checks completion on enrichment. Improved from 3.4% to 5%.
 
-### 5. HoldingEscrow/WhitelistedInvestor Count Gaps (Priority: Low)
-- Largely explained by the 5 missing pools and associated chain data
-- Will improve once V3.1 HubRegistry addresses are added
-
----
-
-## What's Solid for Demo
-
-- **Vault data is 100% match** — count, kind, and status all align perfectly
-- **Pool core data** (isActive, currency, decimals) matches for all shared pools
-- **CrosschainPayload volume** matches (~4K records)
-- **9 chains indexed** including the 3 new ones (Optimism, Hyperliquid, Monad)
-- **tokenId format** now matches Ponder exactly
-- **All event handlers implemented** — zero stubs remaining
-- **crosschainInProgress tracking** works end-to-end (Hub sets → Spoke clears)
-
-## Next Steps to Reach Full Parity
-1. Add V3.1 contract addresses for original 6 chains (different HubRegistry, Hub, Spoke, etc.)
-2. Debug TokenInstance factory registration to capture all ERC20 token deploys
-3. Fix CrosschainPayload status progression logic
-4. Verify Token metadata flow (ShareClassManager → Token entity)
+### Vault crosschainInProgress (12 stale values)
+- **Root cause**: Hub sets CIP, Spoke clears it. Without cross-chain ordering, Hub event may arrive after Spoke already cleared. Fix checks if operation completed, but some edge cases remain.
+- **Impact**: Very low — cosmetic field for UI loading states
