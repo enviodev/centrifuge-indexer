@@ -384,7 +384,7 @@ type RedeemOrder {
 type EpochInvestOrder {
   id: ID! # tokenId-assetId-index
   poolId: BigInt!
-  tokenId: String!
+  tokenId: String! @index
   assetId: BigInt!
   index: Int!
   approvedAt: Int
@@ -412,7 +412,7 @@ type EpochInvestOrder {
 type EpochRedeemOrder {
   id: ID! # tokenId-assetId-index
   poolId: BigInt!
-  tokenId: String!
+  tokenId: String! @index
   assetId: BigInt!
   index: Int!
   approvedAt: Int
