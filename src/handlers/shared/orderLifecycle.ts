@@ -500,6 +500,18 @@ export async function handleIssueShares(
       ...updatedDefaults(event),
     });
   }
+
+  // Update Token totalIssuance
+  const tId = tokenIdFn(poolId, tokenId);
+  const token = await context.Token.get(tId);
+  if (token) {
+    context.Token.set({
+      ...token,
+      totalIssuance: (token.totalIssuance ?? 0n) + issuedShareAmount,
+      tokenPrice: navPoolPerShare > 0n ? navPoolPerShare : token.tokenPrice,
+      ...updatedDefaults(event),
+    });
+  }
 }
 
 // --- RevokeShares ---
@@ -564,6 +576,19 @@ export async function handleRevokeShares(
       revokedAt: event.block.timestamp,
       revokedAtBlock: event.block.number,
       revokedAtTxHash: event.transaction.hash,
+      ...updatedDefaults(event),
+    });
+  }
+
+  // Update Token totalIssuance (decrease on revoke)
+  const tId = tokenIdFn(poolId, tokenId);
+  const token = await context.Token.get(tId);
+  if (token) {
+    const current = token.totalIssuance ?? 0n;
+    context.Token.set({
+      ...token,
+      totalIssuance: current > revokedShareAmount ? current - revokedShareAmount : 0n,
+      tokenPrice: navPoolPerShare > 0n ? navPoolPerShare : token.tokenPrice,
       ...updatedDefaults(event),
     });
   }
