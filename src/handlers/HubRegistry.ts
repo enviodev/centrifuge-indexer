@@ -37,12 +37,13 @@ const _handleNewPool = async ({ event, context }: any) => {
   });
 
   // Determine decimals: ISO currencies (assetId < 1000) use 18, else look up Asset
+  // Default to 18 if asset not yet registered (common for V3.1 pools)
   let decimals: number | undefined;
   if (currency < 1000n) {
     decimals = 18;
   } else {
     const asset = await context.Asset.get(currency.toString());
-    decimals = asset?.decimals;
+    decimals = asset?.decimals ?? 18;
   }
 
   // Create Pool

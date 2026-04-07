@@ -2,6 +2,9 @@ import { getCentrifugeId } from "../../utils/chains";
 import { createdDefaults, updatedDefaults } from "../../utils/defaults";
 import { vaultId as vaultIdFn, tokenId as tokenIdFn, normalizeScId } from "../../utils/ids";
 
+// Max uint128 — default maxReserve value (matches Ponder initialization)
+const MAX_UINT128 = 340282366920938463463374607431768211455n;
+
 const VAULT_KINDS: Record<string, "Async" | "Sync" | "SyncDepositAsyncRedeem"> = {
   "0": "Async",
   "1": "Sync",
@@ -56,7 +59,7 @@ export async function deployVault(
     assetAddress: assetAddress.toLowerCase(),
     factory: factory.toLowerCase(),
     manager: undefined,
-    maxReserve: existing?.maxReserve ?? undefined,
+    maxReserve: existing?.maxReserve ?? MAX_UINT128,
     crosschainInProgress: existing?.crosschainInProgress ?? undefined,
     blockchain_id: centrifugeId,
     token_id: tokenIdFn(poolId, tokenId),

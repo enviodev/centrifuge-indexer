@@ -27,23 +27,18 @@ enum RestrictionType {
 
 function decodeUpdateRestriction(
   payload: string
-): [RestrictionType.Member | RestrictionType.Freeze | RestrictionType.Unfreeze, string, number | undefined] | null {
+): [RestrictionType.Member | RestrictionType.Freeze | RestrictionType.Unfreeze, string, bigint | undefined] | null {
   const buffer = Buffer.from(payload.slice(2), "hex");
   const restrictionType = buffer.readUInt8(0);
   // bytes 1-31: 31-byte field, extract first 20 bytes as address (left-padded with zeros)
   const accountBuffer = buffer.subarray(1, 32);
   const accountAddress = `0x${accountBuffer.toString("hex").slice(0, 40)}`;
 
-  // GraphQL Int → PostgreSQL int4 → max 2,147,483,647
-  const MAX_INT32 = 2_147_483_647;
-
   switch (restrictionType) {
     case RestrictionType.Member: {
       const rawValidUntil = buffer.readBigUInt64BE(33);
-      const validUntilSeconds = Number(rawValidUntil);
-      const validUntil = Number.isSafeInteger(validUntilSeconds)
-        ? Math.min(validUntilSeconds, MAX_INT32)
-        : MAX_INT32;
+      // Store as milliseconds (BigInt) to match Ponder convention
+      const validUntil = rawValidUntil * 1000n;
       return [RestrictionType.Member, accountAddress, validUntil];
     }
     case RestrictionType.Freeze:
@@ -195,11 +190,14 @@ const _handleNotifySharePrice = async ({ event, context }: any) => {
     return;
   }
 
-  context.TokenInstance.set({
-    ...ti,
-    crosschainInProgress: "NotifySharePrice",
-    ...updatedDefaults(event),
-  });
+  // Only set if spoke hasn't already processed this price update
+  if (!ti.crosschainInProgress) {
+    context.TokenInstance.set({
+      ...ti,
+      crosschainInProgress: "NotifySharePrice",
+      ...updatedDefaults(event),
+    });
+  }
 };
 Hub.NotifySharePrice.handler(_handleNotifySharePrice);
 
@@ -213,7 +211,7 @@ const _handleNotifyAssetPrice = async ({ event, context }: any) => {
   const heId = holdingEscrowId(tokenId, assetId);
   const existing = await context.HoldingEscrow.get(heId);
 
-  if (existing) {
+  if (existing && !existing.crosschainInProgress) {
     context.HoldingEscrow.set({
       ...existing,
       crosschainInProgress: "NotifyAssetPrice",
@@ -241,9 +239,15 @@ const _handleUpdateVault = async ({ event, context }: any) => {
     return;
   }
 
+  // Only set crosschainInProgress if the spoke hasn't already completed the operation
+  // (omnichain ordering may deliver spoke events before hub events)
+  const alreadyDone =
+    (crosschainOp === "Link" && vault.status === "Linked") ||
+    (crosschainOp === "Unlink" && vault.status === "Unlinked");
+
   context.Vault.set({
     ...vault,
-    crosschainInProgress: crosschainOp,
+    crosschainInProgress: alreadyDone ? undefined : crosschainOp,
     ...updatedDefaults(event),
   });
 };

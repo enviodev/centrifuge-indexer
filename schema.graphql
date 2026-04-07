@@ -474,7 +474,7 @@ type WhitelistedInvestor {
   accountAddress: String!
   centrifugeId: String!
   isFrozen: Boolean!
-  validUntil: Int
+  validUntil: BigInt
   token: Token
   investorAccount: Account
   createdAt: Int!

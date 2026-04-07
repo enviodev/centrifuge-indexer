@@ -40,6 +40,26 @@ const _handlePrepareMessage = async ({ event, context }: any) => {
       poolId: poolId > 0n ? poolId : executedMsg.poolId,
       pool_id: poolId > 0n ? poolId.toString() : executedMsg.pool_id,
     });
+
+    // If this message has a payload link, check if payload can be completed
+    if (executedMsg.payloadId) {
+      const payloads = await context.CrosschainPayload.getWhere({ payloadId: { _eq: executedMsg.payloadId } });
+      const payload = payloads.find((p: any) => p.status === "Delivered" || p.status === "PartiallyFailed");
+      if (payload) {
+        const payloadMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: executedMsg.payloadId } });
+        const relevant = payloadMessages.filter((m: any) => m.payloadIndex === payload.index);
+        const allDone = relevant.length > 0 && relevant.every((m: any) => m.status === "Executed" || m.status === "Failed");
+        if (allDone) {
+          context.CrosschainPayload.set({
+            ...payload,
+            status: "Completed",
+            completedAt: event.block.timestamp,
+            completedAtBlock: event.block.number,
+            completedAtTxHash: event.transaction.hash,
+          });
+        }
+      }
+    }
     return;
   }
 
@@ -102,18 +122,18 @@ const _handleUnderpaidBatch = async ({ event, context }: any) => {
     const msgHash = getMessageHash(msg);
     const msgId = getMessageId(fromCentrifugeId, toCentrifugeId, msgHash);
 
-    // Check if message already exists in AwaitingBatchDelivery state
+    // Check if message already exists (AwaitingBatchDelivery or Executed without payload link)
     const existingMessages = await context.CrosschainMessage.getWhere({ messageId: { _eq: msgId } });
-    const pendingMsg = existingMessages.find((m: any) => m.status === "AwaitingBatchDelivery" && !m.payloadId);
-    if (pendingMsg) {
+    const linkableMsg = existingMessages.find((m: any) => !m.payloadId);
+    if (linkableMsg) {
       // Link existing message to this payload
       context.CrosschainMessage.set({
-        ...pendingMsg,
+        ...linkableMsg,
         payloadId: payloadIdHash,
         payloadIndex,
         crosschainPayload_id: payloadEntityId,
       });
-      if (pendingMsg.poolId) batchPoolId = pendingMsg.poolId;
+      if (linkableMsg.poolId) batchPoolId = linkableMsg.poolId;
       continue;
     }
 
@@ -284,9 +304,12 @@ const _handleExecuteMessage = async ({ event, context }: any) => {
   if (!payload) return;
 
   // Check all messages for this payload
+  // Note: the current message was just set to Executed but getWhere may return stale state
   const payloadMessages = await context.CrosschainMessage.getWhere({ payloadId: { _eq: payloadId } });
   const relevantMessages = payloadMessages.filter((m: any) => m.payloadIndex === payload.index);
-  const allExecuted = relevantMessages.every((m: any) => m.status === "Executed" || m.id === crosschainMsg.id);
+  const allExecuted = relevantMessages.length > 0 && relevantMessages.every(
+    (m: any) => m.status === "Executed" || m.status === "Failed" || m.id === crosschainMsg.id
+  );
 
   if (allExecuted) {
     context.CrosschainPayload.set({
