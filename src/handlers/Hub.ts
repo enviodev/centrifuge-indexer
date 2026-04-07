@@ -11,6 +11,7 @@ import {
   tokenId as tokenIdFn,
   investorTransactionId,
   policyId,
+  normalizeScId,
 } from "../utils/ids";
 import { getChainMetadata, getCentrifugeId } from "../utils/chains";
 import { decodeSyncManagerTrustedCall } from "../utils/updateContractDecoders";
@@ -84,7 +85,8 @@ Hub.NotifyPool.handler(async ({ event, context }) => {
 });
 
 Hub.UpdateRestriction.handler(async ({ event, context }) => {
-  const { centrifugeId: spokeCentrifugeIdRaw, poolId, scId: tokenId, payload } = event.params;
+  const { centrifugeId: spokeCentrifugeIdRaw, poolId, scId: _rawScId, payload } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const spokeCentrifugeId = spokeCentrifugeIdRaw.toString();
 
   const decoded = decodeUpdateRestriction(payload);
@@ -180,7 +182,8 @@ Hub.UpdateRestriction.handler(async ({ event, context }) => {
 // --- NotifySharePrice: Set crosschainInProgress on TokenInstance ---
 
 Hub.NotifySharePrice.handler(async ({ event, context }) => {
-  const { centrifugeId: spokeCentrifugeIdRaw, poolId, scId: tokenId, poolPerShare } = event.params;
+  const { centrifugeId: spokeCentrifugeIdRaw, poolId, scId: _rawScId, poolPerShare } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const spokeCentrifugeId = spokeCentrifugeIdRaw.toString();
 
   const tiId = tokenInstanceId(spokeCentrifugeId, tokenId);
@@ -200,7 +203,8 @@ Hub.NotifySharePrice.handler(async ({ event, context }) => {
 // --- NotifyAssetPrice: Set crosschainInProgress on HoldingEscrow ---
 
 Hub.NotifyAssetPrice.handler(async ({ event, context }) => {
-  const { centrifugeId: spokeCentrifugeIdRaw, poolId, scId: tokenId, assetId, pricePoolPerAsset } = event.params;
+  const { centrifugeId: spokeCentrifugeIdRaw, poolId, scId: _rawScId, assetId, pricePoolPerAsset } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const spokeCentrifugeId = spokeCentrifugeIdRaw.toString();
 
   const heId = holdingEscrowId(tokenId, assetId);
@@ -218,7 +222,8 @@ Hub.NotifyAssetPrice.handler(async ({ event, context }) => {
 // --- UpdateVault: Set crosschainInProgress on Vault ---
 
 Hub.UpdateVault.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, assetId, vaultOrFactory, kind } = event.params;
+  const { poolId, scId: _rawScId, assetId, vaultOrFactory, kind } = event.params;
+  const tokenId = normalizeScId(_rawScId);
 
   // kind: 0 = Link, 1 = Unlink
   const crosschainOp = Number(kind) === 0 ? "Link" : Number(kind) === 1 ? "Unlink" : null;
@@ -242,7 +247,8 @@ Hub.UpdateVault.handler(async ({ event, context }) => {
 // --- UpdateContract: Routes to SyncManager / MerklePolicy / OnOfframp handlers ---
 
 Hub.UpdateContract.handler(async ({ event, context }) => {
-  const { centrifugeId: spokeCentrifugeIdRaw, poolId, scId: tokenId, target, payload } = event.params;
+  const { centrifugeId: spokeCentrifugeIdRaw, poolId, scId: _rawScId, target, payload } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const spokeCentrifugeId = spokeCentrifugeIdRaw.toString();
 
   // Try decoding as SyncManager trusted call (MaxReserve update)
@@ -270,7 +276,8 @@ Hub.UpdateContract.handler(async ({ event, context }) => {
 Hub.NotifyShareClass.handler(async ({ event, context }) => {
   // Share class creation is tracked via ShareClassManager.AddShareClass
   // and Spoke.AddShareClass. This hub event is informational.
-  const { centrifugeId: spokeCentrifugeIdRaw, poolId, scId: tokenId } = event.params;
+  const { centrifugeId: spokeCentrifugeIdRaw, poolId, scId: _rawScId } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const spokeCentrifugeId = spokeCentrifugeIdRaw.toString();
 
   // Ensure PoolSpokeBlockchain relationship exists
@@ -316,7 +323,8 @@ Hub.UpdateShareHook.handler(async ({ event, context }) => {
 // --- ForwardTransferShares: Cross-chain share forwarding from hub ---
 
 Hub.ForwardTransferShares.handler(async ({ event, context }) => {
-  const { centrifugeId: toCentrifugeIdRaw, poolId, scId: tokenId, receiver, amount } = event.params;
+  const { centrifugeId: toCentrifugeIdRaw, poolId, scId: _rawScId, receiver, amount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const hubCentrifugeId = getCentrifugeId(event.chainId);
   const toCentrifugeId = toCentrifugeIdRaw.toString();
   const toAddress = receiver.substring(0, 42).toLowerCase();

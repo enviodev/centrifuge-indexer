@@ -157,6 +157,12 @@ contracts:
       - event: "RemoveVault(uint64 indexed poolId, bytes16 indexed scId, uint128 indexed assetId, address vault)"
       - event: "TriggerRedeemRequest(uint64 indexed poolId, bytes16 indexed scId, address user, address indexed asset, uint256 tokenId, uint128 shares)"
 
+  - name: SyncMgr
+    abi_file_path: abis/SyncManager.json
+    handler: src/handlers/SyncManager.ts
+    events:
+      - event: "SetMaxReserve(uint64 indexed poolId, bytes16 indexed scId, address asset, uint256 tokenId, uint128 maxReserve)"
+
   # ==========================================================================
   # Factory-Deployed Contracts (dynamically registered via contractRegister)
   # ==========================================================================
@@ -254,13 +260,18 @@ chains:
       - name: MultiAdapterV3_1
         address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
         start_block: 24319304
+      - name: VaultRegistry
+        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
+        start_block: 22996635
+      - name: SyncMgr
+        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
+        start_block: 22996635
       # Factory-deployed contracts (no address — registered dynamically)
       - name: Vault
       - name: PoolEscrow
       - name: OnOfframpManager
       - name: MerkleProofManager
       - name: TokenInstance
-      - name: VaultRegistry
 
   - id: 42161 # Arbitrum
     start_block: 357982308
@@ -293,12 +304,18 @@ chains:
       - name: MultiAdapterV3_1
         address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
         start_block: 425757147
+      - name: VaultRegistry
+        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
+        start_block: 362480836
+      - name: SyncMgr
+        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
+        start_block: 362480836
+      # Factory-deployed contracts (no address — registered dynamically)
       - name: Vault
       - name: PoolEscrow
       - name: OnOfframpManager
       - name: MerkleProofManager
       - name: TokenInstance
-      - name: VaultRegistry
 
   - id: 8453 # Base
     start_block: 32901251
@@ -330,12 +347,16 @@ chains:
       - name: MultiAdapterV3_1
         address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
         start_block: 41362303
+      - name: VaultRegistry
+        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
+      - name: SyncMgr
+        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
+      # Factory-deployed contracts (no address — registered dynamically)
       - name: Vault
       - name: PoolEscrow
       - name: OnOfframpManager
       - name: MerkleProofManager
       - name: TokenInstance
-      - name: VaultRegistry
 
   - id: 43114 # Avalanche
     start_block: 65492900
@@ -368,12 +389,18 @@ chains:
       - name: MultiAdapterV3_1
         address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
         start_block: 76719850
+      - name: VaultRegistry
+        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
+        start_block: 66198180
+      - name: SyncMgr
+        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
+        start_block: 66198180
+      # Factory-deployed contracts (no address — registered dynamically)
       - name: Vault
       - name: PoolEscrow
       - name: OnOfframpManager
       - name: MerkleProofManager
       - name: TokenInstance
-      - name: VaultRegistry
 
   - id: 56 # Binance Smart Chain
     start_block: 54800894
@@ -405,12 +432,16 @@ chains:
       - name: MultiAdapterV3_1
         address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
         start_block: 77734419
+      - name: VaultRegistry
+        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
+      - name: SyncMgr
+        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
+      # Factory-deployed contracts (no address — registered dynamically)
       - name: Vault
       - name: PoolEscrow
       - name: OnOfframpManager
       - name: MerkleProofManager
       - name: TokenInstance
-      - name: VaultRegistry
 
   - id: 98866 # Plume
     start_block: 11931870
@@ -443,9 +474,126 @@ chains:
       - name: MultiAdapterV3_1
         address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
         start_block: 48513023
+      - name: VaultRegistry
+        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
+        start_block: 15794381
+      - name: SyncMgr
+        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
+        start_block: 15794381
+      # Factory-deployed contracts (no address — registered dynamically)
       - name: Vault
       - name: PoolEscrow
       - name: OnOfframpManager
       - name: MerkleProofManager
       - name: TokenInstance
+
+  - id: 10 # Optimism
+    start_block: 147002472
+    contracts:
+      - name: HubRegistry
+        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
+      - name: Hub
+        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
+      - name: Spoke
+        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
+      - name: Gateway
+        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
+      - name: BalanceSheet
+        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
+      - name: Holdings
+        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
+      - name: ShareClassManager
+        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
+      - name: MultiAdapterV3_1
+        address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
+      - name: PoolEscrowFactory
+        address: "0x5187A505c485E22f0b8a5FBdF69eF1c29C478CE3"
+      - name: MerkleProofManagerFactory
+        address: "0xc5243bdEa2d86eA7541AC69084dF3EDdc137a18b"
+      - name: OnOfframpManagerFactory
+        address: "0x2539e60B0B50D7BD004A09e9D2b7E8c86EB0AaF6"
+      - name: BatchRequestManager
+        address: "0xc52Bd1Bdfa0135147D3F01a0B6D6cd0A831dFe77"
       - name: VaultRegistry
+        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
+      - name: SyncMgr
+        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
+      - name: Vault
+      - name: PoolEscrow
+      - name: OnOfframpManager
+      - name: MerkleProofManager
+      - name: TokenInstance
+
+  - id: 999 # Hyperliquid
+    start_block: 25782445
+    contracts:
+      - name: HubRegistry
+        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
+      - name: Hub
+        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
+      - name: Spoke
+        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
+      - name: Gateway
+        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
+      - name: BalanceSheet
+        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
+      - name: Holdings
+        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
+      - name: ShareClassManager
+        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
+      - name: MultiAdapterV3_1
+        address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
+      - name: PoolEscrowFactory
+        address: "0x5187A505c485E22f0b8a5FBdF69eF1c29C478CE3"
+      - name: MerkleProofManagerFactory
+        address: "0xc5243bdEa2d86eA7541AC69084dF3EDdc137a18b"
+      - name: OnOfframpManagerFactory
+        address: "0x2539e60B0B50D7BD004A09e9D2b7E8c86EB0AaF6"
+      - name: BatchRequestManager
+        address: "0xc52Bd1Bdfa0135147D3F01a0B6D6cd0A831dFe77"
+      - name: VaultRegistry
+        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
+      - name: SyncMgr
+        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
+      - name: Vault
+      - name: PoolEscrow
+      - name: OnOfframpManager
+      - name: MerkleProofManager
+      - name: TokenInstance
+
+  - id: 143 # Monad
+    start_block: 51882383
+    contracts:
+      - name: HubRegistry
+        address: "0x19f46D8130e610C6C0f0116EA40Fb781dEFaDE93"
+      - name: Hub
+        address: "0xA4A7Bb3831958463b3FE3E27A6a160F764341953"
+      - name: Spoke
+        address: "0xEC3582fcDc34078a4B7a8c75a5a3AE46f48525aB"
+      - name: Gateway
+        address: "0x19a524D03aA94ECEe41a80341537BCFCb47D3172"
+      - name: BalanceSheet
+        address: "0x12a110cE5f0FC871cC72Bc7ECaF35cf39DD0f43e"
+      - name: Holdings
+        address: "0x3f0c8D8d2637881c3f6d8531F51a47c2094C918d"
+      - name: ShareClassManager
+        address: "0xaFFC269c8fe18EE9C7DDb22301AC2c2507d69BEf"
+      - name: MultiAdapterV3_1
+        address: "0x35C837F0A54B715a23D193E1476BFC9BC30073BE"
+      - name: PoolEscrowFactory
+        address: "0x5187A505c485E22f0b8a5FBdF69eF1c29C478CE3"
+      - name: MerkleProofManagerFactory
+        address: "0xc5243bdEa2d86eA7541AC69084dF3EDdc137a18b"
+      - name: OnOfframpManagerFactory
+        address: "0x2539e60B0B50D7BD004A09e9D2b7E8c86EB0AaF6"
+      - name: BatchRequestManager
+        address: "0xc52Bd1Bdfa0135147D3F01a0B6D6cd0A831dFe77"
+      - name: VaultRegistry
+        address: "0xd9531AC47928c3386346f82d9A2478960bf2CA7B"
+      - name: SyncMgr
+        address: "0xFf8Ed1862f6aC3a8e89B81C75507c225E36e273D"
+      - name: Vault
+      - name: PoolEscrow
+      - name: OnOfframpManager
+      - name: MerkleProofManager
+      - name: TokenInstance

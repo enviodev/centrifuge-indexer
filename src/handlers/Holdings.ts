@@ -1,7 +1,7 @@
 import { Holdings } from "generated";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
-import { holdingId, holdingAccountId, blockchainId, tokenId as tokenIdFn } from "../utils/ids";
+import { holdingId, holdingAccountId, blockchainId, tokenId as tokenIdFn, normalizeScId } from "../utils/ids";
 
 // HoldingAccountType mapping:
 // Non-liability: 0=Asset, 1=Equity, 2=Loss, 3=Gain
@@ -20,7 +20,8 @@ const LIABILITY_TYPES: Record<number, "Expense" | "Liability"> = {
 
 Holdings.Initialize.handler(async ({ event, context }) => {
   // _0 is the unnamed poolId param
-  const { _0: poolId, scId: tokenId, assetId, valuation: valuationRaw, isLiability, accounts } = event.params;
+  const { _0: poolId, scId: _rawScId, assetId, valuation: valuationRaw, isLiability, accounts } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   const hId = holdingId(tokenId, assetId);
@@ -66,7 +67,8 @@ Holdings.Initialize.handler(async ({ event, context }) => {
 });
 
 Holdings.Increase.handler(async ({ event, context }) => {
-  const { _0: poolId, scId: tokenId, assetId, amount, increasedValue } = event.params;
+  const { _0: poolId, scId: _rawScId, assetId, amount, increasedValue } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   const hId = holdingId(tokenId, assetId);
@@ -100,7 +102,8 @@ Holdings.Increase.handler(async ({ event, context }) => {
 });
 
 Holdings.Decrease.handler(async ({ event, context }) => {
-  const { _0: poolId, scId: tokenId, assetId, amount, decreasedValue } = event.params;
+  const { _0: poolId, scId: _rawScId, assetId, amount, decreasedValue } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   const hId = holdingId(tokenId, assetId);
@@ -136,7 +139,8 @@ Holdings.Decrease.handler(async ({ event, context }) => {
 });
 
 Holdings.Update.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, assetId, isPositive, diffValue } = event.params;
+  const { poolId, scId: _rawScId, assetId, isPositive, diffValue } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   const hId = holdingId(tokenId, assetId);
@@ -171,7 +175,8 @@ Holdings.Update.handler(async ({ event, context }) => {
 });
 
 Holdings.UpdateValuation.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, assetId, valuation } = event.params;
+  const { poolId, scId: _rawScId, assetId, valuation } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   const hId = holdingId(tokenId, assetId);
@@ -204,7 +209,8 @@ Holdings.UpdateValuation.handler(async ({ event, context }) => {
 });
 
 Holdings.UpdateIsLiability.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, assetId, isLiability } = event.params;
+  const { poolId, scId: _rawScId, assetId, isLiability } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   const hId = holdingId(tokenId, assetId);
@@ -237,7 +243,8 @@ Holdings.UpdateIsLiability.handler(async ({ event, context }) => {
 });
 
 Holdings.SetAccountId.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, assetId, kind, accountId: newAccountId } = event.params;
+  const { poolId, scId: _rawScId, assetId, kind, accountId: newAccountId } = event.params;
+  const tokenId = normalizeScId(_rawScId);
 
   const hId = holdingId(tokenId, assetId);
   const existing = await context.Holding.get(hId);

@@ -58,6 +58,9 @@ export const centrifugeIds: Record<string, string> = {
   "42161": "3",   // Arbitrum
   "43114": "5",   // Avalanche
   "98866": "4",   // Plume
+  "999": "9",     // Hyperliquid
+  "10": "10",     // Optimism
+  "143": "11",    // Monad
 };
 
 /** Convert an EVM chainId to the Centrifuge-internal centrifugeId. */

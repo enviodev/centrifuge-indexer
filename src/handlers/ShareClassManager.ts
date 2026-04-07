@@ -1,7 +1,7 @@
 import { ShareClassManager } from "generated";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
-import { tokenId as tokenIdFn, blockchainId, holdingEscrowId, snapshotId } from "../utils/ids";
+import { tokenId as tokenIdFn, blockchainId, holdingEscrowId, snapshotId, normalizeScId } from "../utils/ids";
 import {
   handleUpdateDepositRequest,
   handleUpdateRedeemRequest,
@@ -16,7 +16,8 @@ import {
 // --- AddShareClass (Long — with name/symbol/salt) ---
 
 ShareClassManager.AddShareClassLong.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, index, name, symbol, salt } = event.params;
+  const { poolId, scId: _rawScId, index, name, symbol, salt } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   // Look up pool decimals
@@ -48,7 +49,8 @@ ShareClassManager.AddShareClassLong.handler(async ({ event, context }) => {
 // --- AddShareClass (Short — no name/symbol/salt) ---
 
 ShareClassManager.AddShareClassShort.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, index } = event.params;
+  const { poolId, scId: _rawScId, index } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   const pool = await context.Pool.get(poolId.toString());
@@ -79,7 +81,8 @@ ShareClassManager.AddShareClassShort.handler(async ({ event, context }) => {
 // --- UpdateMetadata ---
 
 ShareClassManager.UpdateMetadata.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, name, symbol } = event.params;
+  const { poolId, scId: _rawScId, name, symbol } = event.params;
+  const tokenId = normalizeScId(_rawScId);
 
   const tId = tokenIdFn(poolId, tokenId);
   const existing = await context.Token.get(tId);
@@ -99,7 +102,8 @@ ShareClassManager.UpdateMetadata.handler(async ({ event, context }) => {
 // --- UpdateShareClass ---
 
 ShareClassManager.UpdateShareClass.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, navPoolPerShare: tokenPrice } = event.params;
+  const { poolId, scId: _rawScId, navPoolPerShare: tokenPrice } = event.params;
+  const tokenId = normalizeScId(_rawScId);
 
   const tId = tokenIdFn(poolId, tokenId);
   const existing = await context.Token.get(tId);
@@ -133,7 +137,8 @@ ShareClassManager.UpdateShareClass.handler(async ({ event, context }) => {
 // --- UpdatePricePoolPerShare (v3.1 — includes computedAt timestamp) ---
 
 ShareClassManager.UpdatePricePoolPerShare.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, price: tokenPrice, computedAt: computedAtTimestamp } = event.params;
+  const { poolId, scId: _rawScId, price: tokenPrice, computedAt: computedAtTimestamp } = event.params;
+  const tokenId = normalizeScId(_rawScId);
 
   const tId = tokenIdFn(poolId, tokenId);
   const existing = await context.Token.get(tId);
@@ -172,7 +177,8 @@ ShareClassManager.UpdatePricePoolPerShare.handler(async ({ event, context }) => 
 // --- Order Lifecycle Handlers ---
 
 ShareClassManager.UpdateDepositRequest.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, depositAssetId, epoch, investor, pendingUserAssetAmount, pendingTotalAssetAmount, queuedUserAssetAmount } = event.params;
+  const { poolId, scId: _rawScId, depositAssetId, epoch, investor, pendingUserAssetAmount, pendingTotalAssetAmount, queuedUserAssetAmount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   await handleUpdateDepositRequest(
     { poolId, tokenId, depositAssetId, epoch: Number(epoch), investor, pendingUserAssetAmount, pendingTotalAssetAmount, queuedUserAssetAmount },
     event, context
@@ -180,7 +186,8 @@ ShareClassManager.UpdateDepositRequest.handler(async ({ event, context }) => {
 });
 
 ShareClassManager.UpdateRedeemRequest.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, payoutAssetId, epoch, investor, pendingUserShareAmount, pendingTotalShareAmount, queuedUserShareAmount } = event.params;
+  const { poolId, scId: _rawScId, payoutAssetId, epoch, investor, pendingUserShareAmount, pendingTotalShareAmount, queuedUserShareAmount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   await handleUpdateRedeemRequest(
     { poolId, tokenId, payoutAssetId, epoch: Number(epoch), investor, pendingUserShareAmount, pendingTotalShareAmount, queuedUserShareAmount },
     event, context
@@ -188,7 +195,8 @@ ShareClassManager.UpdateRedeemRequest.handler(async ({ event, context }) => {
 });
 
 ShareClassManager.ApproveDeposits.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, depositAssetId, epoch, approvedPoolAmount, approvedAssetAmount, pendingAssetAmount } = event.params;
+  const { poolId, scId: _rawScId, depositAssetId, epoch, approvedPoolAmount, approvedAssetAmount, pendingAssetAmount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   await handleApproveDeposits(
     { poolId, tokenId, depositAssetId, epoch: Number(epoch), approvedPoolAmount, approvedAssetAmount, pendingAssetAmount },
     event, context
@@ -215,7 +223,8 @@ ShareClassManager.ApproveDeposits.handler(async ({ event, context }) => {
 });
 
 ShareClassManager.ApproveRedeems.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, payoutAssetId, epoch, approvedShareAmount, pendingShareAmount } = event.params;
+  const { poolId, scId: _rawScId, payoutAssetId, epoch, approvedShareAmount, pendingShareAmount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   await handleApproveRedeems(
     { poolId, tokenId, payoutAssetId, epoch: Number(epoch), approvedShareAmount, pendingShareAmount },
     event, context
@@ -242,7 +251,8 @@ ShareClassManager.ApproveRedeems.handler(async ({ event, context }) => {
 });
 
 ShareClassManager.IssueShares.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, depositAssetId, epoch, navPoolPerShare, navAssetPerShare, issuedShareAmount } = event.params;
+  const { poolId, scId: _rawScId, depositAssetId, epoch, navPoolPerShare, navAssetPerShare, issuedShareAmount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   await handleIssueShares(
     { poolId, tokenId, depositAssetId, epoch: Number(epoch), navPoolPerShare, navAssetPerShare, issuedShareAmount },
     event, context
@@ -250,7 +260,8 @@ ShareClassManager.IssueShares.handler(async ({ event, context }) => {
 });
 
 ShareClassManager.RevokeShares.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, payoutAssetId, epoch, navPoolPerShare, navAssetPerShare, revokedShareAmount, revokedAssetAmount, revokedPoolAmount } = event.params;
+  const { poolId, scId: _rawScId, payoutAssetId, epoch, navPoolPerShare, navAssetPerShare, revokedShareAmount, revokedAssetAmount, revokedPoolAmount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   await handleRevokeShares(
     { poolId, tokenId, payoutAssetId, epoch: Number(epoch), navPoolPerShare, navAssetPerShare, revokedShareAmount, revokedAssetAmount, revokedPoolAmount },
     event, context
@@ -258,7 +269,8 @@ ShareClassManager.RevokeShares.handler(async ({ event, context }) => {
 });
 
 ShareClassManager.ClaimDeposit.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, epoch, investor, depositAssetId, paymentAssetAmount, claimedShareAmount } = event.params;
+  const { poolId, scId: _rawScId, epoch, investor, depositAssetId, paymentAssetAmount, claimedShareAmount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   await handleClaimDeposit(
     { poolId, tokenId, epoch: Number(epoch), investor, depositAssetId, paymentAssetAmount, claimedShareAmount },
     event, context
@@ -266,7 +278,8 @@ ShareClassManager.ClaimDeposit.handler(async ({ event, context }) => {
 });
 
 ShareClassManager.ClaimRedeem.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, epoch, investor, payoutAssetId, paymentShareAmount, claimedAssetAmount } = event.params;
+  const { poolId, scId: _rawScId, epoch, investor, payoutAssetId, paymentShareAmount, claimedAssetAmount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   await handleClaimRedeem(
     { poolId, tokenId, epoch: Number(epoch), investor, payoutAssetId, paymentShareAmount, claimedAssetAmount },
     event, context
@@ -276,7 +289,8 @@ ShareClassManager.ClaimRedeem.handler(async ({ event, context }) => {
 // --- RemoteIssueShares: Cross-chain share issuance notification ---
 
 ShareClassManager.RemoteIssueShares.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, issuedShareAmount } = event.params;
+  const { poolId, scId: _rawScId, issuedShareAmount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
 
   const tId = tokenIdFn(poolId, tokenId);
   const existing = await context.Token.get(tId);
@@ -295,7 +309,8 @@ ShareClassManager.RemoteIssueShares.handler(async ({ event, context }) => {
 // --- RemoteRevokeShares: Cross-chain share revocation notification ---
 
 ShareClassManager.RemoteRevokeShares.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, revokedShareAmount } = event.params;
+  const { poolId, scId: _rawScId, revokedShareAmount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
 
   const tId = tokenIdFn(poolId, tokenId);
   const existing = await context.Token.get(tId);

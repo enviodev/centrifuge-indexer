@@ -1,3 +1,11 @@
+// Normalize bytes16 scId — Envio may pad bytes16 to bytes32 at runtime
+export const normalizeScId = (scId: string): string => {
+  if (!scId || !scId.startsWith("0x")) return scId;
+  // bytes32 (66 chars) with trailing zeros → truncate to bytes16 (34 chars)
+  if (scId.length === 66) return scId.slice(0, 34);
+  return scId;
+};
+
 // Composite key builders for entity IDs
 
 export const poolId = (poolIdNum: bigint): string => poolIdNum.toString();

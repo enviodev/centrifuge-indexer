@@ -9,10 +9,12 @@ import {
   snapshotId,
   tokenId as tokenIdFn,
   investorTransactionId,
+  normalizeScId,
 } from "../utils/ids";
 
 BalanceSheet.NoteDeposit.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, asset: assetAddress, amount, pricePoolPerAsset } = event.params;
+  const { poolId, scId: _rawScId, asset: assetAddress, amount, pricePoolPerAsset } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   // Look up asset by address
@@ -72,7 +74,8 @@ BalanceSheet.NoteDeposit.handler(async ({ event, context }) => {
 });
 
 BalanceSheet.Withdraw.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, asset: assetAddress, amount, pricePoolPerAsset } = event.params;
+  const { poolId, scId: _rawScId, asset: assetAddress, amount, pricePoolPerAsset } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   // Look up asset by address
@@ -173,7 +176,8 @@ BalanceSheet.UpdateManager.handler(async ({ event, context }) => {
 // --- Deposit: Track balance sheet asset deposits (hub-side) ---
 
 BalanceSheet.Deposit.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, asset: assetAddress, amount } = event.params;
+  const { poolId, scId: _rawScId, asset: assetAddress, amount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   // Look up asset by address
@@ -214,7 +218,8 @@ BalanceSheet.Deposit.handler(async ({ event, context }) => {
 // --- Issue: Hub-side share issuance record ---
 
 BalanceSheet.Issue.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, to, pricePoolPerShare, shares } = event.params;
+  const { poolId, scId: _rawScId, to, pricePoolPerShare, shares } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
   const toAddress = to.toLowerCase();
 
@@ -266,7 +271,8 @@ BalanceSheet.Issue.handler(async ({ event, context }) => {
 // --- Revoke: Hub-side share revocation record ---
 
 BalanceSheet.Revoke.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, from, pricePoolPerShare, shares } = event.params;
+  const { poolId, scId: _rawScId, from, pricePoolPerShare, shares } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
   const fromAddress = from.toLowerCase();
 
@@ -318,7 +324,8 @@ BalanceSheet.Revoke.handler(async ({ event, context }) => {
 // --- TransferSharesFrom: Hub-side cross-chain share transfer ---
 
 BalanceSheet.TransferSharesFrom.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, from, to, amount } = event.params;
+  const { poolId, scId: _rawScId, from, to, amount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
   const fromAddress = from.toLowerCase();
   const toAddress = to.toLowerCase();

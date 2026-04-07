@@ -9,6 +9,7 @@ import {
   accountId,
   blockchainId,
   investorTransactionId,
+  normalizeScId,
 } from "../utils/ids";
 import { getInitialHolders } from "../utils/constants";
 import { deployVault, linkVault, unlinkVault } from "./shared/vaultOps";
@@ -63,7 +64,8 @@ Spoke.RegisterAsset.handler(async ({ event, context }) => {
 });
 
 Spoke.AddShareClass.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, token: tokenAddress } = event.params;
+  const { poolId, scId: _rawScId, token: tokenAddress } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   // Get or create TokenInstance (skip RPC totalSupply — init to 0, Transfer events will correct)
@@ -143,7 +145,8 @@ Spoke.DeployVault.handler(async ({ event, context }) => {
 });
 
 Spoke.UpdateSharePrice.handler(async ({ event, context }) => {
-  const { scId: tokenId, price: tokenPrice, computedAt: _computedAt } = event.params;
+  const { scId: _rawScId, price: tokenPrice, computedAt: _computedAt } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
   const computedAt = Number(_computedAt);
 
@@ -165,7 +168,8 @@ Spoke.UpdateSharePrice.handler(async ({ event, context }) => {
 });
 
 Spoke.UpdateAssetPrice.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, asset: assetAddress, price: assetPrice } = event.params;
+  const { poolId, scId: _rawScId, asset: assetAddress, price: assetPrice } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   // Look up asset by address to get assetId
@@ -217,7 +221,8 @@ Spoke.UnlinkVault.handler(async ({ event, context }) => {
 });
 
 Spoke.InitiateTransferShares.handler(async ({ event, context }) => {
-  const { centrifugeId: toCentrifugeIdRaw, poolId, scId: tokenId, sender, destinationAddress, amount } = event.params;
+  const { centrifugeId: toCentrifugeIdRaw, poolId, scId: _rawScId, sender, destinationAddress, amount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const fromCentrifugeId = getCentrifugeId(event.chainId);
   const toCentrifugeId = toCentrifugeIdRaw.toString();
 
@@ -293,7 +298,8 @@ Spoke.InitiateTransferShares.handler(async ({ event, context }) => {
 });
 
 Spoke.ExecuteTransferShares.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, receiver, amount } = event.params;
+  const { poolId, scId: _rawScId, receiver, amount } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
   const receiverAddress = receiver.toLowerCase();
 

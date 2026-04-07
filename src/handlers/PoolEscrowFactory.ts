@@ -1,7 +1,7 @@
 import { PoolEscrowFactory, PoolEscrow } from "generated";
 import { getCentrifugeId, networkNames, explorerUrls, chainIcons } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
-import { escrowId, blockchainId, holdingEscrowId } from "../utils/ids";
+import { escrowId, blockchainId, holdingEscrowId, normalizeScId } from "../utils/ids";
 
 // Register dynamically deployed PoolEscrow contracts
 PoolEscrowFactory.DeployPoolEscrow.contractRegister(({ event, context }) => {
@@ -39,7 +39,8 @@ PoolEscrowFactory.DeployPoolEscrow.handler(async ({ event, context }) => {
 // --- PoolEscrow events ---
 
 PoolEscrow.EscrowDeposit.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, asset: assetAddress, value } = event.params;
+  const { poolId, scId: _rawScId, asset: assetAddress, value } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   // Look up asset by address
@@ -78,7 +79,8 @@ PoolEscrow.EscrowDeposit.handler(async ({ event, context }) => {
 });
 
 PoolEscrow.EscrowWithdraw.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, asset: assetAddress, value } = event.params;
+  const { poolId, scId: _rawScId, asset: assetAddress, value } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   // Look up asset by address

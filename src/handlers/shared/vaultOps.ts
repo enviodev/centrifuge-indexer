@@ -1,6 +1,6 @@
 import { getCentrifugeId } from "../../utils/chains";
 import { createdDefaults, updatedDefaults } from "../../utils/defaults";
-import { vaultId as vaultIdFn, tokenId as tokenIdFn } from "../../utils/ids";
+import { vaultId as vaultIdFn, tokenId as tokenIdFn, normalizeScId } from "../../utils/ids";
 
 const VAULT_KINDS: Record<string, "Async" | "Sync" | "SyncDepositAsyncRedeem"> = {
   "0": "Async",
@@ -26,7 +26,8 @@ export async function deployVault(
   event: { params: VaultEventParams; chainId: number; block: { timestamp: number; number: number }; transaction: { hash: string } },
   context: any
 ) {
-  const { poolId, scId: tokenId, asset: assetAddress, factory, vault: vaultAddress, kind } = event.params;
+  const { poolId, scId: _rawScId, asset: assetAddress, factory, vault: vaultAddress, kind } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   const vaultKind = VAULT_KINDS[kind.toString()];

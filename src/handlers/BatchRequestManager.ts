@@ -7,12 +7,14 @@ import {
   investorTransactionId,
   accountId,
   blockchainId,
+  normalizeScId,
 } from "../utils/ids";
 
 // --- AddVault: Register a vault in the batch request manager ---
 
 BatchRequestManager.AddVault.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, assetId, vault: vaultAddress } = event.params;
+  const { poolId, scId: _rawScId, assetId, vault: vaultAddress } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   const id = vaultIdFn(vaultAddress, centrifugeId);
@@ -29,7 +31,8 @@ BatchRequestManager.AddVault.handler(async ({ event, context }) => {
 // --- RemoveVault: Unregister a vault from the batch request manager ---
 
 BatchRequestManager.RemoveVault.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, assetId, vault: vaultAddress } = event.params;
+  const { poolId, scId: _rawScId, assetId, vault: vaultAddress } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
 
   const id = vaultIdFn(vaultAddress, centrifugeId);
@@ -46,7 +49,8 @@ BatchRequestManager.RemoveVault.handler(async ({ event, context }) => {
 // --- TriggerRedeemRequest: Forced redeem triggered by the request manager ---
 
 BatchRequestManager.TriggerRedeemRequest.handler(async ({ event, context }) => {
-  const { poolId, scId: tokenId, user, asset: assetAddress, shares } = event.params;
+  const { poolId, scId: _rawScId, user, asset: assetAddress, shares } = event.params;
+  const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
   const investor = user.toLowerCase();
 
