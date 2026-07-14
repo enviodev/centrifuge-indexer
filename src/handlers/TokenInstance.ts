@@ -1,4 +1,4 @@
-import { TokenInstance } from "generated";
+import { indexer, type TokenInstance } from "envio";
 import { getCentrifugeId, GLOBAL_ESCROW_ADDRESS } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import {
@@ -12,7 +12,9 @@ import {
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-TokenInstance.Transfer.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "TokenInstance", event: "Transfer" },
+  async ({ event, context }) => {
   const { from, to, value: amount } = event.params;
   const tokenAddress = event.srcAddress.toLowerCase();
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -207,4 +209,5 @@ TokenInstance.Transfer.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+}
+);

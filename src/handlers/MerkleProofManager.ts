@@ -1,14 +1,19 @@
-import { MerkleProofManagerFactory, MerkleProofManager } from "generated";
+import { indexer, type MerkleProofManager } from "envio";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import { merkleProofManagerEntityId, policyId } from "../utils/ids";
 
 // Register dynamically deployed MerkleProofManager contracts
-MerkleProofManagerFactory.DeployMerkleProofManager.contractRegister(({ event, context }) => {
-  context.addMerkleProofManager(event.params.manager);
-});
+indexer.contractRegister(
+  { contract: "MerkleProofManagerFactory", event: "DeployMerkleProofManager" },
+  async ({ event, context }) => {
+  context.chain.MerkleProofManager.add(event.params.manager);
+}
+);
 
-MerkleProofManagerFactory.DeployMerkleProofManager.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MerkleProofManagerFactory", event: "DeployMerkleProofManager" },
+  async ({ event, context }) => {
   const { poolId, manager } = event.params;
   const centrifugeId = getCentrifugeId(event.chainId);
   const managerAddress = manager.toLowerCase();
@@ -21,12 +26,15 @@ MerkleProofManagerFactory.DeployMerkleProofManager.handler(async ({ event, conte
     pool_id: poolId.toString(),
     ...createdDefaults(event),
   });
-});
+}
+);
 
 // --- UpdatePolicy ---
 // Source uses RPC readContract to get poolId — we look up the stored entity instead
 
-MerkleProofManager.UpdatePolicy.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MerkleProofManager", event: "UpdatePolicy" },
+  async ({ event, context }) => {
   const { strategist, newRoot } = event.params;
   const centrifugeId = getCentrifugeId(event.chainId);
   const managerAddress = event.srcAddress.toLowerCase();
@@ -60,4 +68,5 @@ MerkleProofManager.UpdatePolicy.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+}
+);

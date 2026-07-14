@@ -1,4 +1,4 @@
-import { OnOfframpManagerFactory, OnOfframpManager } from "generated";
+import { indexer, type OnOffRampManager } from "envio";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import {
@@ -10,12 +10,17 @@ import {
   tokenId as tokenIdFn,
 } from "../utils/ids";
 
-// Register dynamically deployed OnOfframpManager contracts
-OnOfframpManagerFactory.DeployOnOfframpManager.contractRegister(({ event, context }) => {
-  context.addOnOfframpManager(event.params.manager);
-});
+// Register dynamically deployed OnOffRampManager contracts
+indexer.contractRegister(
+  { contract: "OnOffRampManagerFactory", event: "DeployOnOffRampManager" },
+  async ({ event, context }) => {
+  context.chain.OnOffRampManager.add(event.params.manager);
+}
+);
 
-OnOfframpManagerFactory.DeployOnOfframpManager.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "OnOffRampManagerFactory", event: "DeployOnOffRampManager" },
+  async ({ event, context }) => {
   const { poolId, scId, manager } = event.params;
   const centrifugeId = getCentrifugeId(event.chainId);
   const managerAddress = manager.toLowerCase();
@@ -31,11 +36,14 @@ OnOfframpManagerFactory.DeployOnOfframpManager.handler(async ({ event, context }
     token_id: tokenIdFn(poolId, tokenId),
     ...createdDefaults(event),
   });
-});
+}
+);
 
 // --- UpdateRelayer ---
 
-OnOfframpManager.UpdateRelayer.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "OnOffRampManager", event: "UpdateRelayer" },
+  async ({ event, context }) => {
   const { relayer, isEnabled } = event.params;
   const centrifugeId = getCentrifugeId(event.chainId);
   const managerAddress = event.srcAddress.toLowerCase();
@@ -70,11 +78,14 @@ OnOfframpManager.UpdateRelayer.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+}
+);
 
 // --- UpdateOnramp ---
 
-OnOfframpManager.UpdateOnramp.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "OnOffRampManager", event: "UpdateOnramp" },
+  async ({ event, context }) => {
   const { asset, isEnabled } = event.params;
   const centrifugeId = getCentrifugeId(event.chainId);
   const managerAddress = event.srcAddress.toLowerCase();
@@ -111,11 +122,14 @@ OnOfframpManager.UpdateOnramp.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+}
+);
 
 // --- UpdateOfframp ---
 
-OnOfframpManager.UpdateOfframp.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "OnOffRampManager", event: "UpdateOfframp" },
+  async ({ event, context }) => {
   const { asset, receiver } = event.params;
   const centrifugeId = getCentrifugeId(event.chainId);
   const managerAddress = event.srcAddress.toLowerCase();
@@ -159,4 +173,5 @@ OnOfframpManager.UpdateOfframp.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+}
+);

@@ -1,14 +1,19 @@
-import { PoolEscrowFactory, PoolEscrow } from "generated";
+import { indexer } from "envio";
 import { getCentrifugeId, networkNames, explorerUrls, chainIcons } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import { escrowId, blockchainId, holdingEscrowId, normalizeScId } from "../utils/ids";
 
 // Register dynamically deployed PoolEscrow contracts
-PoolEscrowFactory.DeployPoolEscrow.contractRegister(({ event, context }) => {
-  context.addPoolEscrow(event.params.escrow);
-});
+indexer.contractRegister(
+  { contract: "PoolEscrowFactory", event: "DeployPoolEscrow" },
+  async ({ event, context }) => {
+  context.chain.PoolEscrow.add(event.params.escrow);
+}
+);
 
-PoolEscrowFactory.DeployPoolEscrow.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PoolEscrowFactory", event: "DeployPoolEscrow" },
+  async ({ event, context }) => {
   const { poolId, escrow: escrowAddress } = event.params;
   const centrifugeId = getCentrifugeId(event.chainId);
   const chainIdStr = event.chainId.toString();
@@ -34,11 +39,14 @@ PoolEscrowFactory.DeployPoolEscrow.handler(async ({ event, context }) => {
     blockchain_id: blockchainId(centrifugeId),
     ...createdDefaults(event),
   });
-});
+}
+);
 
 // --- PoolEscrow events ---
 
-PoolEscrow.EscrowDeposit.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PoolEscrow", event: "EscrowDeposit" },
+  async ({ event, context }) => {
   const { poolId, scId: _rawScId, asset: assetAddress, value } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -76,9 +84,12 @@ PoolEscrow.EscrowDeposit.handler(async ({ event, context }) => {
     escrow_id: existing?.escrow_id ?? escrow.id,
     ...(existing ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
   });
-});
+}
+);
 
-PoolEscrow.EscrowWithdraw.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PoolEscrow", event: "EscrowWithdraw" },
+  async ({ event, context }) => {
   const { poolId, scId: _rawScId, asset: assetAddress, value } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -117,4 +128,5 @@ PoolEscrow.EscrowWithdraw.handler(async ({ event, context }) => {
     escrow_id: existing?.escrow_id ?? escrow.id,
     ...(existing ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
   });
-});
+}
+);

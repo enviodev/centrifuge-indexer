@@ -1,4 +1,4 @@
-import { Vault } from "generated";
+import { indexer, type Vault } from "envio";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import {
@@ -50,7 +50,9 @@ async function getVaultContext(event: any, context: any) {
 
 // --- DepositRequest ---
 
-Vault.DepositRequest.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "Vault", event: "DepositRequest" },
+  async ({ event, context }) => {
   const { controller, assets } = event.params;
   const investor = controller.substring(0, 42).toLowerCase();
 
@@ -148,11 +150,14 @@ Vault.DepositRequest.handler(async ({ event, context }) => {
     vault_id: vaultIdFn(event.srcAddress, centrifugeId),
     ...(existingVio ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
   });
-});
+}
+);
 
 // --- RedeemRequest ---
 
-Vault.RedeemRequest.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "Vault", event: "RedeemRequest" },
+  async ({ event, context }) => {
   const { controller, shares } = event.params;
   const investor = controller.substring(0, 42).toLowerCase();
 
@@ -231,11 +236,14 @@ Vault.RedeemRequest.handler(async ({ event, context }) => {
     vault_id: vaultIdFn(event.srcAddress, centrifugeId),
     ...(existingVro ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
   });
-});
+}
+);
 
 // --- DepositClaimable ---
 
-Vault.DepositClaimable.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "Vault", event: "DepositClaimable" },
+  async ({ event, context }) => {
   const { controller, assets, shares } = event.params;
   const investor = controller.substring(0, 42).toLowerCase();
 
@@ -302,11 +310,14 @@ Vault.DepositClaimable.handler(async ({ event, context }) => {
     vault_id: vaultIdFn(event.srcAddress, centrifugeId),
     ...(existingVio ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
   });
-});
+}
+);
 
 // --- RedeemClaimable ---
 
-Vault.RedeemClaimable.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "Vault", event: "RedeemClaimable" },
+  async ({ event, context }) => {
   const { controller, assets, shares } = event.params;
   const investor = controller.substring(0, 42).toLowerCase();
 
@@ -369,11 +380,14 @@ Vault.RedeemClaimable.handler(async ({ event, context }) => {
     vault_id: vaultIdFn(event.srcAddress, centrifugeId),
     ...(existingVro ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
   });
-});
+}
+);
 
 // --- Deposit ---
 
-Vault.Deposit.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "Vault", event: "Deposit" },
+  async ({ event, context }) => {
   const { sender, owner, assets, shares } = event.params;
 
   const ctx = await getVaultContext(event, context);
@@ -546,11 +560,14 @@ Vault.Deposit.handler(async ({ event, context }) => {
       break;
     }
   }
-});
+}
+);
 
 // --- Withdraw ---
 
-Vault.Withdraw.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "Vault", event: "Withdraw" },
+  async ({ event, context }) => {
   const { owner, assets, shares } = event.params;
 
   const ctx = await getVaultContext(event, context);
@@ -614,11 +631,14 @@ Vault.Withdraw.handler(async ({ event, context }) => {
       ...updatedDefaults(event),
     });
   }
-});
+}
+);
 
 // --- CancelDepositRequest ---
 
-Vault.CancelDepositRequest.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "Vault", event: "CancelDepositRequest" },
+  async ({ event, context }) => {
   const { controller } = event.params;
   const investor = controller.substring(0, 42).toLowerCase();
 
@@ -657,11 +677,14 @@ Vault.CancelDepositRequest.handler(async ({ event, context }) => {
     currencyAsset_id: asset ? asset.id : undefined,
     ...createdDefaults(event),
   });
-});
+}
+);
 
 // --- CancelDepositClaim ---
 
-Vault.CancelDepositClaim.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "Vault", event: "CancelDepositClaim" },
+  async ({ event, context }) => {
   const { controller, assets } = event.params;
   const investor = controller.substring(0, 42).toLowerCase();
 
@@ -712,11 +735,14 @@ Vault.CancelDepositClaim.handler(async ({ event, context }) => {
       ...updatedDefaults(event),
     });
   }
-});
+}
+);
 
 // --- CancelDepositClaimable ---
 
-Vault.CancelDepositClaimable.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "Vault", event: "CancelDepositClaimable" },
+  async ({ event, context }) => {
   const { controller, assets } = event.params;
   const investor = controller.substring(0, 42).toLowerCase();
 
@@ -755,11 +781,14 @@ Vault.CancelDepositClaimable.handler(async ({ event, context }) => {
     currencyAsset_id: asset ? asset.id : undefined,
     ...createdDefaults(event),
   });
-});
+}
+);
 
 // --- CancelRedeemRequest ---
 
-Vault.CancelRedeemRequest.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "Vault", event: "CancelRedeemRequest" },
+  async ({ event, context }) => {
   const { controller } = event.params;
   const investor = controller.substring(0, 42).toLowerCase();
 
@@ -798,11 +827,14 @@ Vault.CancelRedeemRequest.handler(async ({ event, context }) => {
     currencyAsset_id: asset ? asset.id : undefined,
     ...createdDefaults(event),
   });
-});
+}
+);
 
 // --- CancelRedeemClaim ---
 
-Vault.CancelRedeemClaim.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "Vault", event: "CancelRedeemClaim" },
+  async ({ event, context }) => {
   const { controller, shares } = event.params;
   const investor = controller.substring(0, 42).toLowerCase();
 
@@ -853,11 +885,14 @@ Vault.CancelRedeemClaim.handler(async ({ event, context }) => {
       ...updatedDefaults(event),
     });
   }
-});
+}
+);
 
 // --- CancelRedeemClaimable ---
 
-Vault.CancelRedeemClaimable.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "Vault", event: "CancelRedeemClaimable" },
+  async ({ event, context }) => {
   const { controller, shares } = event.params;
   const investor = controller.substring(0, 42).toLowerCase();
 
@@ -896,4 +931,5 @@ Vault.CancelRedeemClaimable.handler(async ({ event, context }) => {
     currencyAsset_id: asset ? asset.id : undefined,
     ...createdDefaults(event),
   });
-});
+}
+);

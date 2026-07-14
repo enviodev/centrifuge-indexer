@@ -1,4 +1,4 @@
-import { MultiAdapter, MultiAdapterV3_1 } from "generated";
+import { indexer } from "envio";
 import { tryCompletePayload } from "./Gateway";
 import { getCentrifugeId, ADAPTER_ADDRESSES } from "../utils/chains";
 import { createdDefaults } from "../utils/defaults";
@@ -202,19 +202,27 @@ async function handleSendPayload(
   });
 }
 
-MultiAdapter.SendPayload.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MultiAdapter", event: "SendPayload" },
+  async ({ event, context }) => {
   await handleSendPayload(event, context);
-});
+}
+);
 
-MultiAdapterV3_1.SendPayloadV3_1.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MultiAdapterV3_1", event: "SendPayloadV3_1" },
+  async ({ event, context }) => {
   const gasLimit = event.params.gasLimit;
   const gasPaid = event.params.gasPaid;
   await handleSendPayload(event, context, gasLimit, gasPaid);
-});
+}
+);
 
 // --- SendProof ---
 
-MultiAdapter.SendProof.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MultiAdapter", event: "SendProof" },
+  async ({ event, context }) => {
   const { payloadId: payloadIdHex, adapter, centrifugeId: toCentrifugeIdNum } = event.params;
   const toCentrifugeId = toCentrifugeIdNum.toString();
   const fromCentrifugeId = getCentrifugeId(event.chainId);
@@ -251,7 +259,8 @@ MultiAdapter.SendProof.handler(async ({ event, context }) => {
     fromBlockchain_id: blockchainId(fromCentrifugeId),
     toBlockchain_id: blockchainId(toCentrifugeId),
   });
-});
+}
+);
 
 // --- HandlePayload (shared logic) ---
 
@@ -350,17 +359,25 @@ async function handleHandlePayload(event: any, context: any) {
   }
 }
 
-MultiAdapter.HandlePayload.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MultiAdapter", event: "HandlePayload" },
+  async ({ event, context }) => {
   await handleHandlePayload(event, context);
-});
+}
+);
 
-MultiAdapterV3_1.HandlePayloadV3_1.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MultiAdapterV3_1", event: "HandlePayloadV3_1" },
+  async ({ event, context }) => {
   await handleHandlePayload(event, context);
-});
+}
+);
 
 // --- HandleProof ---
 
-MultiAdapter.HandleProof.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MultiAdapter", event: "HandleProof" },
+  async ({ event, context }) => {
   // RECEIVING CHAIN
   const { payloadId: payloadIdHex, adapter, centrifugeId: fromCentrifugeIdNum } = event.params;
   const fromCentrifugeId = fromCentrifugeIdNum.toString();
@@ -451,11 +468,14 @@ MultiAdapter.HandleProof.handler(async ({ event, context }) => {
       }
     }
   }
-});
+}
+);
 
 // --- FileAdapters ---
 
-MultiAdapter.FileAdapters.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MultiAdapter", event: "FileAdapters" },
+  async ({ event, context }) => {
   const localCentrifugeId = getCentrifugeId(event.chainId);
   const { what, centrifugeId: remoteCentrifugeIdNum, adapters } = event.params;
   const remoteCentrifugeId = remoteCentrifugeIdNum.toString();
@@ -498,4 +518,5 @@ MultiAdapter.FileAdapters.handler(async ({ event, context }) => {
       ...createdDefaults(event),
     });
   }
-});
+}
+);

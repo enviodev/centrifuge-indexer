@@ -1,4 +1,4 @@
-import { HubRegistry, HubRegistryV3_1 } from "generated";
+import { indexer } from "envio";
 import "./Snapshots"; // Side-effect import — registers onBlock handlers
 import { getCentrifugeId, networkNames, explorerUrls, chainIcons, GLOBAL_ESCROW_ADDRESS } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
@@ -86,7 +86,10 @@ const _handleNewPool = async ({ event, context }: any) => {
   // Initialize V2 whitelisted investors if this is a known V2 pool
   await initV2WhitelistedInvestors(context, poolId);
 };
-HubRegistry.NewPool.handler(_handleNewPool);
+indexer.onEvent(
+  { contract: "HubRegistry", event: "NewPool" },
+  _handleNewPool
+);
 
 const _handleNewAsset = async ({ event, context }: any) => {
   const { assetId, decimals } = event.params;
@@ -131,7 +134,10 @@ const _handleNewAsset = async ({ event, context }: any) => {
     });
   }
 };
-HubRegistry.NewAsset.handler(_handleNewAsset);
+indexer.onEvent(
+  { contract: "HubRegistry", event: "NewAsset" },
+  _handleNewAsset
+);
 
 const _handleUpdateCurrency = async ({ event, context }: any) => {
   const { poolId, currency } = event.params;
@@ -148,7 +154,10 @@ const _handleUpdateCurrency = async ({ event, context }: any) => {
     ...updatedDefaults(event),
   });
 };
-HubRegistry.UpdateCurrency.handler(_handleUpdateCurrency);
+indexer.onEvent(
+  { contract: "HubRegistry", event: "UpdateCurrency" },
+  _handleUpdateCurrency
+);
 
 const _handleUpdateManager = async ({ event, context }: any) => {
   const { poolId, manager, canManage } = event.params;
@@ -185,7 +194,10 @@ const _handleUpdateManager = async ({ event, context }: any) => {
     });
   }
 };
-HubRegistry.UpdateManager.handler(_handleUpdateManager);
+indexer.onEvent(
+  { contract: "HubRegistry", event: "UpdateManager" },
+  _handleUpdateManager
+);
 
 const _handleSetMetadata = async ({ event, context }: any) => {
   const { poolId, metadata: rawMetadata } = event.params;
@@ -222,12 +234,30 @@ const _handleSetMetadata = async ({ event, context }: any) => {
     ...updatedDefaults(event),
   });
 };
-HubRegistry.SetMetadata.handler(_handleSetMetadata);
+indexer.onEvent(
+  { contract: "HubRegistry", event: "SetMetadata" },
+  _handleSetMetadata
+);
 
 // === V3.1 Handler Registrations (delegates to V3 logic) ===
 
-HubRegistryV3_1.V3_1NewPool.handler(_handleNewPool);
-HubRegistryV3_1.V3_1NewAsset.handler(_handleNewAsset);
-HubRegistryV3_1.V3_1UpdateCurrency.handler(_handleUpdateCurrency);
-HubRegistryV3_1.V3_1UpdateManager.handler(_handleUpdateManager);
-HubRegistryV3_1.V3_1SetMetadata.handler(_handleSetMetadata);
+indexer.onEvent(
+  { contract: "HubRegistryV3_1", event: "V3_1NewPool" },
+  _handleNewPool
+);
+indexer.onEvent(
+  { contract: "HubRegistryV3_1", event: "V3_1NewAsset" },
+  _handleNewAsset
+);
+indexer.onEvent(
+  { contract: "HubRegistryV3_1", event: "V3_1UpdateCurrency" },
+  _handleUpdateCurrency
+);
+indexer.onEvent(
+  { contract: "HubRegistryV3_1", event: "V3_1UpdateManager" },
+  _handleUpdateManager
+);
+indexer.onEvent(
+  { contract: "HubRegistryV3_1", event: "V3_1SetMetadata" },
+  _handleSetMetadata
+);

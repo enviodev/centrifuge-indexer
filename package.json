@@ -6,7 +6,7 @@
     "codegen": "envio codegen",
     "dev": "envio dev",
     "start": "envio start",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
@@ -14,11 +14,8 @@
     "vitest": "4.0.16"
   },
   "dependencies": {
-    "envio": "3.0.0-alpha.21",
+    "envio": "3.2.1",
     "viem": "^2.0.0"
-  },
-  "optionalDependencies": {
-    "generated": "./centrifuge-indexer/../generated"
   },
   "engines": {
     "node": ">=22.0.0"

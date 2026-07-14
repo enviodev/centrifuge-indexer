@@ -1,4 +1,4 @@
-import { ShareClassManager, ShareClassManagerV3_1 } from "generated";
+import { indexer } from "envio";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import { tokenId as tokenIdFn, blockchainId, holdingEscrowId, snapshotId, normalizeScId } from "../utils/ids";
@@ -45,7 +45,10 @@ const _handleAddShareClassLong = async ({ event, context }: any) => {
     ...(existing ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
   });
 };
-ShareClassManager.AddShareClassLong.handler(_handleAddShareClassLong);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "AddShareClassLong" },
+  _handleAddShareClassLong
+);
 
 // --- AddShareClass (Short — no name/symbol/salt) ---
 
@@ -78,7 +81,10 @@ const _handleAddShareClassShort = async ({ event, context }: any) => {
     ...(existing ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
   });
 };
-ShareClassManager.AddShareClassShort.handler(_handleAddShareClassShort);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "AddShareClassShort" },
+  _handleAddShareClassShort
+);
 
 // --- UpdateMetadata ---
 
@@ -100,7 +106,10 @@ const _handleUpdateMetadata = async ({ event, context }: any) => {
     ...updatedDefaults(event),
   });
 };
-ShareClassManager.UpdateMetadata.handler(_handleUpdateMetadata);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "UpdateMetadata" },
+  _handleUpdateMetadata
+);
 
 // --- UpdateShareClass ---
 
@@ -136,7 +145,10 @@ const _handleUpdateShareClass = async ({ event, context }: any) => {
     tokenPriceComputedAt: existing.tokenPriceComputedAt ?? undefined,
   });
 };
-ShareClassManager.UpdateShareClass.handler(_handleUpdateShareClass);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "UpdateShareClass" },
+  _handleUpdateShareClass
+);
 
 // --- UpdatePricePoolPerShare (v3.1 — includes computedAt timestamp) ---
 
@@ -177,7 +189,10 @@ const _handleUpdatePricePoolPerShare = async ({ event, context }: any) => {
     tokenPriceComputedAt: computedAt,
   });
 };
-ShareClassManager.UpdatePricePoolPerShare.handler(_handleUpdatePricePoolPerShare);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "UpdatePricePoolPerShare" },
+  _handleUpdatePricePoolPerShare
+);
 
 // --- Order Lifecycle Handlers ---
 
@@ -189,7 +204,10 @@ const _handleUpdateDepositRequest = async ({ event, context }: any) => {
     event, context
   );
 };
-ShareClassManager.UpdateDepositRequest.handler(_handleUpdateDepositRequest);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "UpdateDepositRequest" },
+  _handleUpdateDepositRequest
+);
 
 const _handleUpdateRedeemRequest = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, payoutAssetId, epoch, investor, pendingUserShareAmount, pendingTotalShareAmount, queuedUserShareAmount } = event.params;
@@ -199,7 +217,10 @@ const _handleUpdateRedeemRequest = async ({ event, context }: any) => {
     event, context
   );
 };
-ShareClassManager.UpdateRedeemRequest.handler(_handleUpdateRedeemRequest);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "UpdateRedeemRequest" },
+  _handleUpdateRedeemRequest
+);
 
 const _handleApproveDeposits = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, depositAssetId, epoch, approvedPoolAmount, approvedAssetAmount, pendingAssetAmount } = event.params;
@@ -228,7 +249,10 @@ const _handleApproveDeposits = async ({ event, context }: any) => {
     });
   }
 };
-ShareClassManager.ApproveDeposits.handler(_handleApproveDeposits);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "ApproveDeposits" },
+  _handleApproveDeposits
+);
 
 const _handleApproveRedeems = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, payoutAssetId, epoch, approvedShareAmount, pendingShareAmount } = event.params;
@@ -257,7 +281,10 @@ const _handleApproveRedeems = async ({ event, context }: any) => {
     });
   }
 };
-ShareClassManager.ApproveRedeems.handler(_handleApproveRedeems);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "ApproveRedeems" },
+  _handleApproveRedeems
+);
 
 const _handleIssueShares = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, depositAssetId, epoch, navPoolPerShare, navAssetPerShare, issuedShareAmount } = event.params;
@@ -267,7 +294,10 @@ const _handleIssueShares = async ({ event, context }: any) => {
     event, context
   );
 };
-ShareClassManager.IssueShares.handler(_handleIssueShares);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "IssueShares" },
+  _handleIssueShares
+);
 
 const _handleRevokeShares = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, payoutAssetId, epoch, navPoolPerShare, navAssetPerShare, revokedShareAmount, revokedAssetAmount, revokedPoolAmount } = event.params;
@@ -277,7 +307,10 @@ const _handleRevokeShares = async ({ event, context }: any) => {
     event, context
   );
 };
-ShareClassManager.RevokeShares.handler(_handleRevokeShares);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "RevokeShares" },
+  _handleRevokeShares
+);
 
 const _handleClaimDeposit = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, epoch, investor, depositAssetId, paymentAssetAmount, claimedShareAmount } = event.params;
@@ -287,7 +320,10 @@ const _handleClaimDeposit = async ({ event, context }: any) => {
     event, context
   );
 };
-ShareClassManager.ClaimDeposit.handler(_handleClaimDeposit);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "ClaimDeposit" },
+  _handleClaimDeposit
+);
 
 const _handleClaimRedeem = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, epoch, investor, payoutAssetId, paymentShareAmount, claimedAssetAmount } = event.params;
@@ -297,7 +333,10 @@ const _handleClaimRedeem = async ({ event, context }: any) => {
     event, context
   );
 };
-ShareClassManager.ClaimRedeem.handler(_handleClaimRedeem);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "ClaimRedeem" },
+  _handleClaimRedeem
+);
 
 // --- RemoteIssueShares: Cross-chain share issuance notification ---
 
@@ -318,7 +357,10 @@ const _handleRemoteIssueShares = async ({ event, context }: any) => {
     ...updatedDefaults(event),
   });
 };
-ShareClassManager.RemoteIssueShares.handler(_handleRemoteIssueShares);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "RemoteIssueShares" },
+  _handleRemoteIssueShares
+);
 
 // --- RemoteRevokeShares: Cross-chain share revocation notification ---
 
@@ -340,22 +382,70 @@ const _handleRemoteRevokeShares = async ({ event, context }: any) => {
     ...updatedDefaults(event),
   });
 };
-ShareClassManager.RemoteRevokeShares.handler(_handleRemoteRevokeShares);
+indexer.onEvent(
+  { contract: "ShareClassManager", event: "RemoteRevokeShares" },
+  _handleRemoteRevokeShares
+);
 
 // === V3.1 Handler Registrations (delegates to V3 logic) ===
 
-ShareClassManagerV3_1.V3_1AddShareClassLong.handler(_handleAddShareClassLong);
-ShareClassManagerV3_1.V3_1AddShareClassShort.handler(_handleAddShareClassShort);
-ShareClassManagerV3_1.V3_1UpdateMetadata.handler(_handleUpdateMetadata);
-ShareClassManagerV3_1.V3_1UpdateShareClass.handler(_handleUpdateShareClass);
-ShareClassManagerV3_1.V3_1UpdatePricePoolPerShare.handler(_handleUpdatePricePoolPerShare);
-ShareClassManagerV3_1.V3_1UpdateDepositRequest.handler(_handleUpdateDepositRequest);
-ShareClassManagerV3_1.V3_1UpdateRedeemRequest.handler(_handleUpdateRedeemRequest);
-ShareClassManagerV3_1.V3_1ApproveDeposits.handler(_handleApproveDeposits);
-ShareClassManagerV3_1.V3_1ApproveRedeems.handler(_handleApproveRedeems);
-ShareClassManagerV3_1.V3_1IssueShares.handler(_handleIssueShares);
-ShareClassManagerV3_1.V3_1RevokeShares.handler(_handleRevokeShares);
-ShareClassManagerV3_1.V3_1ClaimDeposit.handler(_handleClaimDeposit);
-ShareClassManagerV3_1.V3_1ClaimRedeem.handler(_handleClaimRedeem);
-ShareClassManagerV3_1.V3_1RemoteIssueShares.handler(_handleRemoteIssueShares);
-ShareClassManagerV3_1.V3_1RemoteRevokeShares.handler(_handleRemoteRevokeShares);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1AddShareClassLong" },
+  _handleAddShareClassLong
+);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1AddShareClassShort" },
+  _handleAddShareClassShort
+);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1UpdateMetadata" },
+  _handleUpdateMetadata
+);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1UpdateShareClass" },
+  _handleUpdateShareClass
+);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1UpdatePricePoolPerShare" },
+  _handleUpdatePricePoolPerShare
+);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1UpdateDepositRequest" },
+  _handleUpdateDepositRequest
+);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1UpdateRedeemRequest" },
+  _handleUpdateRedeemRequest
+);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1ApproveDeposits" },
+  _handleApproveDeposits
+);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1ApproveRedeems" },
+  _handleApproveRedeems
+);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1IssueShares" },
+  _handleIssueShares
+);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1RevokeShares" },
+  _handleRevokeShares
+);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1ClaimDeposit" },
+  _handleClaimDeposit
+);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1ClaimRedeem" },
+  _handleClaimRedeem
+);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1RemoteIssueShares" },
+  _handleRemoteIssueShares
+);
+indexer.onEvent(
+  { contract: "ShareClassManagerV3_1", event: "V3_1RemoteRevokeShares" },
+  _handleRemoteRevokeShares
+);

@@ -1,4 +1,4 @@
-import { Hub, HubV3_1 } from "generated";
+import { indexer } from "envio";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import {
   poolSpokeBlockchainId,
@@ -78,7 +78,10 @@ const _handleNotifyPool = async ({ event, context }: any) => {
     ...createdDefaults(event),
   });
 };
-Hub.NotifyPool.handler(_handleNotifyPool);
+indexer.onEvent(
+  { contract: "Hub", event: "NotifyPool" },
+  _handleNotifyPool
+);
 
 const _handleUpdateRestriction = async ({ event, context }: any) => {
   const { centrifugeId: spokeCentrifugeIdRaw, poolId, scId: _rawScId, payload } = event.params;
@@ -174,7 +177,10 @@ const _handleUpdateRestriction = async ({ event, context }: any) => {
       break;
   }
 };
-Hub.UpdateRestriction.handler(_handleUpdateRestriction);
+indexer.onEvent(
+  { contract: "Hub", event: "UpdateRestriction" },
+  _handleUpdateRestriction
+);
 
 // --- NotifySharePrice: Set crosschainInProgress on TokenInstance ---
 
@@ -199,7 +205,10 @@ const _handleNotifySharePrice = async ({ event, context }: any) => {
     });
   }
 };
-Hub.NotifySharePrice.handler(_handleNotifySharePrice);
+indexer.onEvent(
+  { contract: "Hub", event: "NotifySharePrice" },
+  _handleNotifySharePrice
+);
 
 // --- NotifyAssetPrice: Set crosschainInProgress on HoldingEscrow ---
 
@@ -219,7 +228,10 @@ const _handleNotifyAssetPrice = async ({ event, context }: any) => {
     });
   }
 };
-Hub.NotifyAssetPrice.handler(_handleNotifyAssetPrice);
+indexer.onEvent(
+  { contract: "Hub", event: "NotifyAssetPrice" },
+  _handleNotifyAssetPrice
+);
 
 // --- UpdateVault: Set crosschainInProgress on Vault ---
 
@@ -251,7 +263,10 @@ const _handleUpdateVault = async ({ event, context }: any) => {
     ...updatedDefaults(event),
   });
 };
-Hub.UpdateVault.handler(_handleUpdateVault);
+indexer.onEvent(
+  { contract: "Hub", event: "UpdateVault" },
+  _handleUpdateVault
+);
 
 // --- UpdateContract: Routes to SyncManager / MerklePolicy / OnOfframp handlers ---
 
@@ -279,7 +294,10 @@ const _handleUpdateContract = async ({ event, context }: any) => {
   // Other UpdateContract payloads (MerklePolicy, OnOfframp) are handled
   // by their respective factory-deployed contract event handlers
 };
-Hub.UpdateContract.handler(_handleUpdateContract);
+indexer.onEvent(
+  { contract: "Hub", event: "UpdateContract" },
+  _handleUpdateContract
+);
 
 // --- NotifyShareClass: Spoke acknowledgment of share class notification ---
 
@@ -316,7 +334,10 @@ const _handleNotifyShareClass = async ({ event, context }: any) => {
     });
   }
 };
-Hub.NotifyShareClass.handler(_handleNotifyShareClass);
+indexer.onEvent(
+  { contract: "Hub", event: "NotifyShareClass" },
+  _handleNotifyShareClass
+);
 
 // --- NotifyShareMetadata: Informational hub event ---
 
@@ -324,14 +345,20 @@ const _handleNotifyShareMetadata = async ({ event, context }: any) => {
   // Share metadata updates are tracked via ShareClassManager.UpdateMetadata.
   // This hub event indicates a metadata push to a spoke chain — informational only.
 };
-Hub.NotifyShareMetadata.handler(_handleNotifyShareMetadata);
+indexer.onEvent(
+  { contract: "Hub", event: "NotifyShareMetadata" },
+  _handleNotifyShareMetadata
+);
 
 // --- UpdateShareHook: Informational hub event ---
 
 const _handleUpdateShareHook = async ({ event, context }: any) => {
   // Share hooks are protocol-level configurations. No entity tracking needed.
 };
-Hub.UpdateShareHook.handler(_handleUpdateShareHook);
+indexer.onEvent(
+  { contract: "Hub", event: "UpdateShareHook" },
+  _handleUpdateShareHook
+);
 
 // --- ForwardTransferShares: Cross-chain share forwarding from hub ---
 
@@ -376,17 +403,50 @@ const _handleForwardTransferShares = async ({ event, context }: any) => {
     ...createdDefaults(event),
   });
 };
-Hub.ForwardTransferShares.handler(_handleForwardTransferShares);
+indexer.onEvent(
+  { contract: "Hub", event: "ForwardTransferShares" },
+  _handleForwardTransferShares
+);
 
 // === V3.1 Handler Registrations (delegates to V3 logic) ===
 
-HubV3_1.V3_1NotifyPool.handler(_handleNotifyPool);
-HubV3_1.V3_1UpdateRestriction.handler(_handleUpdateRestriction);
-HubV3_1.V3_1NotifySharePrice.handler(_handleNotifySharePrice);
-HubV3_1.V3_1NotifyAssetPrice.handler(_handleNotifyAssetPrice);
-HubV3_1.V3_1UpdateVault.handler(_handleUpdateVault);
-HubV3_1.V3_1UpdateContract.handler(_handleUpdateContract);
-HubV3_1.V3_1NotifyShareClass.handler(_handleNotifyShareClass);
-HubV3_1.V3_1NotifyShareMetadata.handler(_handleNotifyShareMetadata);
-HubV3_1.V3_1UpdateShareHook.handler(_handleUpdateShareHook);
-HubV3_1.V3_1ForwardTransferShares.handler(_handleForwardTransferShares);
+indexer.onEvent(
+  { contract: "HubV3_1", event: "V3_1NotifyPool" },
+  _handleNotifyPool
+);
+indexer.onEvent(
+  { contract: "HubV3_1", event: "V3_1UpdateRestriction" },
+  _handleUpdateRestriction
+);
+indexer.onEvent(
+  { contract: "HubV3_1", event: "V3_1NotifySharePrice" },
+  _handleNotifySharePrice
+);
+indexer.onEvent(
+  { contract: "HubV3_1", event: "V3_1NotifyAssetPrice" },
+  _handleNotifyAssetPrice
+);
+indexer.onEvent(
+  { contract: "HubV3_1", event: "V3_1UpdateVault" },
+  _handleUpdateVault
+);
+indexer.onEvent(
+  { contract: "HubV3_1", event: "V3_1UpdateContract" },
+  _handleUpdateContract
+);
+indexer.onEvent(
+  { contract: "HubV3_1", event: "V3_1NotifyShareClass" },
+  _handleNotifyShareClass
+);
+indexer.onEvent(
+  { contract: "HubV3_1", event: "V3_1NotifyShareMetadata" },
+  _handleNotifyShareMetadata
+);
+indexer.onEvent(
+  { contract: "HubV3_1", event: "V3_1UpdateShareHook" },
+  _handleUpdateShareHook
+);
+indexer.onEvent(
+  { contract: "HubV3_1", event: "V3_1ForwardTransferShares" },
+  _handleForwardTransferShares
+);

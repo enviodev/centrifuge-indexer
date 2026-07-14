@@ -1,4 +1,4 @@
-import { BalanceSheet, BalanceSheetV3_1 } from "generated";
+import { indexer } from "envio";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import {
@@ -72,7 +72,10 @@ const _handleNoteDeposit = async ({ event, context }: any) => {
     assetPrice: pricePoolPerAsset,
   });
 };
-BalanceSheet.NoteDeposit.handler(_handleNoteDeposit);
+indexer.onEvent(
+  { contract: "BalanceSheet", event: "NoteDeposit" },
+  _handleNoteDeposit
+);
 
 const _handleWithdraw = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, asset: assetAddress, amount, pricePoolPerAsset } = event.params;
@@ -135,7 +138,10 @@ const _handleWithdraw = async ({ event, context }: any) => {
     assetPrice: pricePoolPerAsset,
   });
 };
-BalanceSheet.Withdraw.handler(_handleWithdraw);
+indexer.onEvent(
+  { contract: "BalanceSheet", event: "Withdraw" },
+  _handleWithdraw
+);
 
 const _handleUpdateManager = async ({ event, context }: any) => {
   const { poolId, who: manager, canManage } = event.params;
@@ -174,7 +180,10 @@ const _handleUpdateManager = async ({ event, context }: any) => {
     });
   }
 };
-BalanceSheet.UpdateManager.handler(_handleUpdateManager);
+indexer.onEvent(
+  { contract: "BalanceSheet", event: "UpdateManager" },
+  _handleUpdateManager
+);
 
 // --- Deposit: Track balance sheet asset deposits (hub-side) ---
 
@@ -217,7 +226,10 @@ const _handleDeposit = async ({ event, context }: any) => {
     ...(existing ? { ...createdDefaults(event), ...updatedDefaults(event) } : createdDefaults(event)),
   });
 };
-BalanceSheet.Deposit.handler(_handleDeposit);
+indexer.onEvent(
+  { contract: "BalanceSheet", event: "Deposit" },
+  _handleDeposit
+);
 
 // --- Issue: Hub-side share issuance record ---
 
@@ -271,7 +283,10 @@ const _handleIssue = async ({ event, context }: any) => {
     ...createdDefaults(event),
   });
 };
-BalanceSheet.Issue.handler(_handleIssue);
+indexer.onEvent(
+  { contract: "BalanceSheet", event: "Issue" },
+  _handleIssue
+);
 
 // --- Revoke: Hub-side share revocation record ---
 
@@ -325,7 +340,10 @@ const _handleRevoke = async ({ event, context }: any) => {
     ...createdDefaults(event),
   });
 };
-BalanceSheet.Revoke.handler(_handleRevoke);
+indexer.onEvent(
+  { contract: "BalanceSheet", event: "Revoke" },
+  _handleRevoke
+);
 
 // --- TransferSharesFrom: Hub-side cross-chain share transfer ---
 
@@ -403,14 +421,38 @@ const _handleTransferSharesFrom = async ({ event, context }: any) => {
     ...createdDefaults(event),
   });
 };
-BalanceSheet.TransferSharesFrom.handler(_handleTransferSharesFrom);
+indexer.onEvent(
+  { contract: "BalanceSheet", event: "TransferSharesFrom" },
+  _handleTransferSharesFrom
+);
 
 // === V3.1 Handler Registrations (delegates to V3 logic) ===
 
-BalanceSheetV3_1.V3_1NoteDeposit.handler(_handleNoteDeposit);
-BalanceSheetV3_1.V3_1Withdraw.handler(_handleWithdraw);
-BalanceSheetV3_1.V3_1BSUpdateManager.handler(_handleUpdateManager);
-BalanceSheetV3_1.V3_1Deposit.handler(_handleDeposit);
-BalanceSheetV3_1.V3_1Issue.handler(_handleIssue);
-BalanceSheetV3_1.V3_1Revoke.handler(_handleRevoke);
-BalanceSheetV3_1.V3_1TransferSharesFrom.handler(_handleTransferSharesFrom);
+indexer.onEvent(
+  { contract: "BalanceSheetV3_1", event: "V3_1NoteDeposit" },
+  _handleNoteDeposit
+);
+indexer.onEvent(
+  { contract: "BalanceSheetV3_1", event: "V3_1Withdraw" },
+  _handleWithdraw
+);
+indexer.onEvent(
+  { contract: "BalanceSheetV3_1", event: "V3_1BSUpdateManager" },
+  _handleUpdateManager
+);
+indexer.onEvent(
+  { contract: "BalanceSheetV3_1", event: "V3_1Deposit" },
+  _handleDeposit
+);
+indexer.onEvent(
+  { contract: "BalanceSheetV3_1", event: "V3_1Issue" },
+  _handleIssue
+);
+indexer.onEvent(
+  { contract: "BalanceSheetV3_1", event: "V3_1Revoke" },
+  _handleRevoke
+);
+indexer.onEvent(
+  { contract: "BalanceSheetV3_1", event: "V3_1TransferSharesFrom" },
+  _handleTransferSharesFrom
+);

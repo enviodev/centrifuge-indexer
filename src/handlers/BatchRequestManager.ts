@@ -1,4 +1,4 @@
-import { BatchRequestManager } from "generated";
+import { indexer } from "envio";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import {
@@ -12,7 +12,9 @@ import {
 
 // --- AddVault: Register a vault in the batch request manager ---
 
-BatchRequestManager.AddVault.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "BatchRequestManager", event: "AddVault" },
+  async ({ event, context }) => {
   const { poolId, scId: _rawScId, assetId, vault: vaultAddress } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -26,11 +28,14 @@ BatchRequestManager.AddVault.handler(async ({ event, context }) => {
       ...updatedDefaults(event),
     });
   }
-});
+}
+);
 
 // --- RemoveVault: Unregister a vault from the batch request manager ---
 
-BatchRequestManager.RemoveVault.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "BatchRequestManager", event: "RemoveVault" },
+  async ({ event, context }) => {
   const { poolId, scId: _rawScId, assetId, vault: vaultAddress } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -44,11 +49,14 @@ BatchRequestManager.RemoveVault.handler(async ({ event, context }) => {
       ...updatedDefaults(event),
     });
   }
-});
+}
+);
 
 // --- TriggerRedeemRequest: Forced redeem triggered by the request manager ---
 
-BatchRequestManager.TriggerRedeemRequest.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "BatchRequestManager", event: "TriggerRedeemRequest" },
+  async ({ event, context }) => {
   const { poolId, scId: _rawScId, user, asset: assetAddress, shares } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -91,4 +99,5 @@ BatchRequestManager.TriggerRedeemRequest.handler(async ({ event, context }) => {
     currencyAsset_id: asset ? asset.id : undefined,
     ...createdDefaults(event),
   });
-});
+}
+);

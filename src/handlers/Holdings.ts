@@ -1,4 +1,4 @@
-import { Holdings, HoldingsV3_1 } from "generated";
+import { indexer } from "envio";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults, updatedDefaults } from "../utils/defaults";
 import { holdingId, holdingAccountId, blockchainId, tokenId as tokenIdFn, normalizeScId } from "../utils/ids";
@@ -65,7 +65,10 @@ const _handleInitialize = async ({ event, context }: any) => {
     });
   }
 };
-Holdings.Initialize.handler(_handleInitialize);
+indexer.onEvent(
+  { contract: "Holdings", event: "Initialize" },
+  _handleInitialize
+);
 
 const _handleIncrease = async ({ event, context }: any) => {
   const { _0: poolId, scId: _rawScId, assetId, amount, increasedValue } = event.params;
@@ -101,7 +104,10 @@ const _handleIncrease = async ({ event, context }: any) => {
     });
   }
 };
-Holdings.Increase.handler(_handleIncrease);
+indexer.onEvent(
+  { contract: "Holdings", event: "Increase" },
+  _handleIncrease
+);
 
 const _handleDecrease = async ({ event, context }: any) => {
   const { _0: poolId, scId: _rawScId, assetId, amount, decreasedValue } = event.params;
@@ -139,7 +145,10 @@ const _handleDecrease = async ({ event, context }: any) => {
     });
   }
 };
-Holdings.Decrease.handler(_handleDecrease);
+indexer.onEvent(
+  { contract: "Holdings", event: "Decrease" },
+  _handleDecrease
+);
 
 const _handleUpdate = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, assetId, isPositive, diffValue } = event.params;
@@ -176,7 +185,10 @@ const _handleUpdate = async ({ event, context }: any) => {
     });
   }
 };
-Holdings.Update.handler(_handleUpdate);
+indexer.onEvent(
+  { contract: "Holdings", event: "Update" },
+  _handleUpdate
+);
 
 const _handleUpdateValuation = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, assetId, valuation } = event.params;
@@ -211,7 +223,10 @@ const _handleUpdateValuation = async ({ event, context }: any) => {
     });
   }
 };
-Holdings.UpdateValuation.handler(_handleUpdateValuation);
+indexer.onEvent(
+  { contract: "Holdings", event: "UpdateValuation" },
+  _handleUpdateValuation
+);
 
 const _handleUpdateIsLiability = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, assetId, isLiability } = event.params;
@@ -246,7 +261,10 @@ const _handleUpdateIsLiability = async ({ event, context }: any) => {
     });
   }
 };
-Holdings.UpdateIsLiability.handler(_handleUpdateIsLiability);
+indexer.onEvent(
+  { contract: "Holdings", event: "UpdateIsLiability" },
+  _handleUpdateIsLiability
+);
 
 const _handleSetAccountId = async ({ event, context }: any) => {
   const { poolId, scId: _rawScId, assetId, kind, accountId: newAccountId } = event.params;
@@ -271,14 +289,38 @@ const _handleSetAccountId = async ({ event, context }: any) => {
     ...createdDefaults(event),
   });
 };
-Holdings.SetAccountId.handler(_handleSetAccountId);
+indexer.onEvent(
+  { contract: "Holdings", event: "SetAccountId" },
+  _handleSetAccountId
+);
 
 // === V3.1 Handler Registrations (delegates to V3 logic) ===
 
-HoldingsV3_1.V3_1Initialize.handler(_handleInitialize);
-HoldingsV3_1.V3_1Increase.handler(_handleIncrease);
-HoldingsV3_1.V3_1Decrease.handler(_handleDecrease);
-HoldingsV3_1.V3_1Update.handler(_handleUpdate);
-HoldingsV3_1.V3_1UpdateValuation.handler(_handleUpdateValuation);
-HoldingsV3_1.V3_1UpdateIsLiability.handler(_handleUpdateIsLiability);
-HoldingsV3_1.V3_1SetAccountId.handler(_handleSetAccountId);
+indexer.onEvent(
+  { contract: "HoldingsV3_1", event: "V3_1Initialize" },
+  _handleInitialize
+);
+indexer.onEvent(
+  { contract: "HoldingsV3_1", event: "V3_1Increase" },
+  _handleIncrease
+);
+indexer.onEvent(
+  { contract: "HoldingsV3_1", event: "V3_1Decrease" },
+  _handleDecrease
+);
+indexer.onEvent(
+  { contract: "HoldingsV3_1", event: "V3_1Update" },
+  _handleUpdate
+);
+indexer.onEvent(
+  { contract: "HoldingsV3_1", event: "V3_1UpdateValuation" },
+  _handleUpdateValuation
+);
+indexer.onEvent(
+  { contract: "HoldingsV3_1", event: "V3_1UpdateIsLiability" },
+  _handleUpdateIsLiability
+);
+indexer.onEvent(
+  { contract: "HoldingsV3_1", event: "V3_1SetAccountId" },
+  _handleSetAccountId
+);

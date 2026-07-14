@@ -1,4 +1,4 @@
-import { Gateway, GatewayV3_1 } from "generated";
+import { indexer } from "envio";
 import { getCentrifugeId } from "../utils/chains";
 import { createdDefaults } from "../utils/defaults";
 import {
@@ -109,7 +109,10 @@ const _handlePrepareMessage = async ({ event, context }: any) => {
     ...createdDefaults(event),
   });
 };
-Gateway.PrepareMessage.handler(_handlePrepareMessage);
+indexer.onEvent(
+  { contract: "Gateway", event: "PrepareMessage" },
+  _handlePrepareMessage
+);
 
 // --- UnderpaidBatch ---
 
@@ -219,7 +222,10 @@ const _handleUnderpaidBatch = async ({ event, context }: any) => {
     ...createdDefaults(event),
   });
 };
-Gateway.UnderpaidBatch.handler(_handleUnderpaidBatch);
+indexer.onEvent(
+  { contract: "Gateway", event: "UnderpaidBatch" },
+  _handleUnderpaidBatch
+);
 
 // --- RepayBatch ---
 
@@ -256,7 +262,10 @@ const _handleRepayBatch = async ({ event, context }: any) => {
     status: "InTransit",
   });
 };
-Gateway.RepayBatch.handler(_handleRepayBatch);
+indexer.onEvent(
+  { contract: "Gateway", event: "RepayBatch" },
+  _handleRepayBatch
+);
 
 // --- ExecuteMessage ---
 
@@ -324,7 +333,10 @@ const _handleExecuteMessage = async ({ event, context }: any) => {
     await tryCompletePayload(context, crosschainMsg.payloadId, event);
   }
 };
-Gateway.ExecuteMessage.handler(_handleExecuteMessage);
+indexer.onEvent(
+  { contract: "Gateway", event: "ExecuteMessage" },
+  _handleExecuteMessage
+);
 
 // --- FailMessage ---
 
@@ -393,12 +405,30 @@ const _handleFailMessage = async ({ event, context }: any) => {
     await tryCompletePayload(context, crosschainMsg.payloadId, event);
   }
 };
-Gateway.FailMessage.handler(_handleFailMessage);
+indexer.onEvent(
+  { contract: "Gateway", event: "FailMessage" },
+  _handleFailMessage
+);
 
 // === V3.1 Handler Registrations (delegates to V3 logic) ===
 
-GatewayV3_1.V3_1PrepareMessage.handler(_handlePrepareMessage);
-GatewayV3_1.V3_1ExecuteMessage.handler(_handleExecuteMessage);
-GatewayV3_1.V3_1FailMessage.handler(_handleFailMessage);
-GatewayV3_1.V3_1UnderpaidBatch.handler(_handleUnderpaidBatch);
-GatewayV3_1.V3_1RepayBatch.handler(_handleRepayBatch);
+indexer.onEvent(
+  { contract: "GatewayV3_1", event: "V3_1PrepareMessage" },
+  _handlePrepareMessage
+);
+indexer.onEvent(
+  { contract: "GatewayV3_1", event: "V3_1ExecuteMessage" },
+  _handleExecuteMessage
+);
+indexer.onEvent(
+  { contract: "GatewayV3_1", event: "V3_1FailMessage" },
+  _handleFailMessage
+);
+indexer.onEvent(
+  { contract: "GatewayV3_1", event: "V3_1UnderpaidBatch" },
+  _handleUnderpaidBatch
+);
+indexer.onEvent(
+  { contract: "GatewayV3_1", event: "V3_1RepayBatch" },
+  _handleRepayBatch
+);

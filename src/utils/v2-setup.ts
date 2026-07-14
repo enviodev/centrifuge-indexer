@@ -6,7 +6,7 @@
 import { V2_POOLS, V2_MIGRATION_BLOCK, V2_MIGRATION_TIMESTAMP } from "./constants";
 import { whitelistedInvestorId } from "./ids";
 
-type HandlerContext = {
+type EvmOnEventContext = {
   WhitelistedInvestor: {
     get: (id: string) => Promise<any>;
     set: (entity: any) => void;
@@ -17,7 +17,7 @@ type HandlerContext = {
 };
 
 export async function initV2WhitelistedInvestors(
-  context: HandlerContext,
+  context: EvmOnEventContext,
   poolId: bigint
 ): Promise<void> {
   for (const pool of Object.values(V2_POOLS)) {

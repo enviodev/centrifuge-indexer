@@ -1,21 +1,33 @@
-import { VaultRegistry } from "generated";
+import { indexer } from "envio";
 import { deployVault, linkVault, unlinkVault } from "./shared/vaultOps";
 
 // --- contractRegister for DeployVault (registers Vault contract) ---
-VaultRegistry.VaultRegistryDeployVault.contractRegister(({ event, context }) => {
-  context.addVault(event.params.vault);
-});
+indexer.contractRegister(
+  { contract: "VaultRegistry", event: "VaultRegistryDeployVault" },
+  async ({ event, context }) => {
+  context.chain.Vault.add(event.params.vault);
+}
+);
 
 // --- Handlers ---
 
-VaultRegistry.VaultRegistryDeployVault.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "VaultRegistry", event: "VaultRegistryDeployVault" },
+  async ({ event, context }) => {
   await deployVault(event, context);
-});
+}
+);
 
-VaultRegistry.VaultRegistryLinkVault.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "VaultRegistry", event: "VaultRegistryLinkVault" },
+  async ({ event, context }) => {
   await linkVault(event, context);
-});
+}
+);
 
-VaultRegistry.VaultRegistryUnlinkVault.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "VaultRegistry", event: "VaultRegistryUnlinkVault" },
+  async ({ event, context }) => {
   await unlinkVault(event, context);
-});
+}
+);

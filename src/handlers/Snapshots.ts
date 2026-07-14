@@ -1,4 +1,4 @@
-import { onBlock } from "generated";
+import { indexer } from "envio";
 import { getCentrifugeId, networkNames, skipBlocks } from "../utils/chains";
 import { snapshotId, blockchainId } from "../utils/ids";
 
@@ -19,8 +19,14 @@ for (const { chainId, startBlock } of CHAINS) {
   const interval = skipBlocks[chainIdStr] ?? 300;
   const centrifugeId = getCentrifugeId(chainId);
 
-  onBlock(
-    { name: `Snapshot_${chainName}`, chain: chainId, interval, startBlock },
+  indexer.onBlock(
+    {
+      name: `Snapshot_${chainName}`,
+      where: ({ chain }) => {
+        if (chain.id !== chainId) return false;
+        return { block: { number: { _gte: startBlock, _every: interval } } };
+      },
+    },
     async ({ block, context }) => {
       const trigger = `${chainName}:NewPeriod`;
       // blockEvent type only exposes `number`; timestamp may be available at runtime

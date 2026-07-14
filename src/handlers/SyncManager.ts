@@ -1,11 +1,13 @@
-import { SyncMgr } from "generated";
+import { indexer } from "envio";
 import { getCentrifugeId } from "../utils/chains";
 import { updatedDefaults } from "../utils/defaults";
 import { normalizeScId } from "../utils/ids";
 
 // --- SetMaxReserve: Spoke-side max reserve update, clears crosschainInProgress ---
 
-SyncMgr.SetMaxReserve.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "SyncMgr", event: "SetMaxReserve" },
+  async ({ event, context }) => {
   const { poolId, scId: _rawScId, asset: assetAddress, maxReserve } = event.params;
   const tokenId = normalizeScId(_rawScId);
   const centrifugeId = getCentrifugeId(event.chainId);
@@ -29,4 +31,5 @@ SyncMgr.SetMaxReserve.handler(async ({ event, context }) => {
     crosschainInProgress: undefined,
     ...updatedDefaults(event),
   });
-});
+}
+);
