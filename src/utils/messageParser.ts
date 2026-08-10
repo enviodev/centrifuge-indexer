@@ -115,7 +115,7 @@ const VERSION_OVERRIDES: Record<string, number> = {
 };
 
 /** Get version index (0=V3, 1=V3_1) for a contract on a given chain */
-export function getVersionIndex(chainId: number, srcAddress: string): number {
+export function getVersionIndex(srcAddress: string): number {
   const key = `${chainId}-${srcAddress.toLowerCase()}`;
   return VERSION_OVERRIDES[key] ?? 0; // Default to V3
 }

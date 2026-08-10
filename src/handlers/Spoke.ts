@@ -55,7 +55,6 @@ const _handleRegisterAsset = async ({ event, context }: any) => {
     centrifugeId,
     network: networkNames[chainIdStr] ?? chainIdStr,
     lastPeriodStart: undefined,
-    chainId: event.chainId,
     name: networkNames[chainIdStr],
     explorer: explorerUrls[chainIdStr],
     icon: chainIcons[chainIdStr],
@@ -93,7 +92,6 @@ const _handleAddShareClass = async ({ event, context }: any) => {
   if (initialSupply === 0n) {
     try {
       const supplyStr = await context.effect(readTotalSupply, JSON.stringify({
-        chainId: event.chainId,
         tokenAddress: tokenAddress.toLowerCase(),
       }));
       initialSupply = BigInt(supplyStr);

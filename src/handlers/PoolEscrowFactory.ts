@@ -24,7 +24,6 @@ indexer.onEvent(
     centrifugeId,
     network: networkNames[chainIdStr] ?? chainIdStr,
     lastPeriodStart: undefined,
-    chainId: event.chainId,
     name: networkNames[chainIdStr],
     explorer: explorerUrls[chainIdStr],
     icon: chainIcons[chainIdStr],

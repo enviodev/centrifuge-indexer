@@ -5,12 +5,12 @@ import { snapshotId, blockchainId } from "../utils/ids";
 // Chain configurations matching config.yaml start blocks
 // `as const` ensures chainId is a literal union type matching onBlock's expected chain type
 const CHAINS = [
-  { chainId: 1, startBlock: 22924235 },
-  { chainId: 42161, startBlock: 357982308 },
-  { chainId: 8453, startBlock: 32901251 },
-  { chainId: 43114, startBlock: 65492900 },
-  { chainId: 56, startBlock: 54800894 },
-  { chainId: 98866, startBlock: 11931870 },
+  { startBlock: 22924235 },
+  { startBlock: 357982308 },
+  { startBlock: 32901251 },
+  { startBlock: 65492900 },
+  { startBlock: 54800894 },
+  { startBlock: 11931870 },
 ] as const;
 
 for (const { chainId, startBlock } of CHAINS) {

@@ -78,7 +78,6 @@ export const chainIdByCentrifugeId: Record<string, string> = Object.fromEntries(
 /** Get chain metadata (network name, explorer, icon) for a centrifugeId. */
 export function getChainMetadata(centrifugeId: string): {
   network: string;
-  chainId: string | undefined;
   explorer: string | undefined;
   icon: string | undefined;
 } {

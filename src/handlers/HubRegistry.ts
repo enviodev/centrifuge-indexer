@@ -20,7 +20,6 @@ const _handleNewPool = async ({ event, context }: any) => {
     centrifugeId,
     network: networkNames[chainIdStr] ?? chainIdStr,
     lastPeriodStart: undefined,
-    chainId: event.chainId,
     name: networkNames[chainIdStr],
     explorer: explorerUrls[chainIdStr],
     icon: chainIcons[chainIdStr],
@@ -29,7 +28,6 @@ const _handleNewPool = async ({ event, context }: any) => {
   // getOrCreate Deployment (stores globalEscrow address per chain)
   await context.Deployment.getOrCreate({
     id: deploymentId(event.chainId),
-    chainId: chainIdStr,
     centrifugeId,
     globalEscrow: GLOBAL_ESCROW_ADDRESS,
     blockchain_id: blockchainId(centrifugeId),
@@ -102,7 +100,6 @@ const _handleNewAsset = async ({ event, context }: any) => {
     centrifugeId,
     network: networkNames[chainIdStr] ?? chainIdStr,
     lastPeriodStart: undefined,
-    chainId: event.chainId,
     name: networkNames[chainIdStr],
     explorer: explorerUrls[chainIdStr],
     icon: chainIcons[chainIdStr],

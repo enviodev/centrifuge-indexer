@@ -76,7 +76,6 @@ type Blockchain {
   centrifugeId: String!
   network: String!
   lastPeriodStart: Int
-  chainId: Int
   name: String
   explorer: String
   icon: String
@@ -96,7 +95,6 @@ type Blockchain {
 
 type Deployment {
   id: ID! # chainId
-  chainId: String!
   centrifugeId: String!
   globalEscrow: String
   blockchain: Blockchain!
