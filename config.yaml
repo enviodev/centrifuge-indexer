@@ -1,4 +1,5 @@
 name: centrifuge-indexer
+disable_default_cross_chain: true # recommended; default in HyperIndex v4
 description: Centrifuge Protocol Indexer
 field_selection:
   transaction_fields:
